@@ -8,15 +8,11 @@ from io import StringIO
 
 # %%
 
-squad_df = pd.read_csv("squad.csv")
+squad_df = pd.read_csv("squad.csv", index_col=0)
 
 # %%
-squad_df.reset_index(drop=True)
+
 squad_df
-
-# %%
-
-squad_df = squad_df.drop(columns=squad_df.columns[0])
 
 # %%
 squad_df
@@ -24,8 +20,6 @@ squad_df
 
 # %%
 def squad_ages_df() -> pd.DataFrame:
-
-    # %%
     squad_rows = []
     for df in squad_dfs:
         squad_row = df.iloc[-2]

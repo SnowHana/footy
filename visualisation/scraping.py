@@ -54,7 +54,7 @@ def get_squad_dfs(team_urls: list[str]) -> list[pd.DataFrame]:
     return squad_dfs
 
 
-def store_squad_dfs():
+def store_squad_df():
     # Store squad_dfs into a single csv file
     team_urls = get_team_urls(standings_url)
     squad_dfs = get_squad_dfs(team_urls)
@@ -72,5 +72,17 @@ def store_squad_dfs():
     # result_df = result_df.drop(columns=result_df.columns[0])
     result_df.to_csv("squad.csv", index=True)
 
+    # Store avg info
+    squad_avg_rows = []
+    for df in squad_dfs:
+        squad_avg_row = df.iloc[-2]
+        squad_avg_rows.append(squad_avg_row)
+    # Concatenate squad infos to a single df
+    squad_avg_df = pd.concat(squad_avg_rows, axis=1).T
+    # Remove columns with NaN values
+    squad_avg_df = squad_avg_df.dropna(axis=1)
+    squad_avg_df.set_index("team", inplace=True)
+    squad_avg_df.to_csv("squad_avg.csv", index=True)
 
-store_squad_dfs()
+
+store_squad_df()
