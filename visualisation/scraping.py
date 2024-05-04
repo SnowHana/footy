@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -97,14 +98,46 @@ class Squad:
         squad_avg_path = "./squad_avg.csv"
         if not (os.path.isfile(squad_path) and os.path.isfile(squad_avg_path)):
             # File doesnt exist
-            s = Scrape()
-            s.store_squad_to_csv()
+            try:
+                s = Scrape()
+                s.store_squad_to_csv()
+            except:
+                print("Error: Scraping didn't work properly.")
+            else:
+                print("Scraping process executed successfully.")
         else:
             print("File exist!")
+
+        # File exists
+        self.squad_avg_df = pd.read_csv(squad_avg_path, index_col=0)
+
+    # def get_squad_df(self):
+    # print(self.squad_avg_df)
+
+    def avg_age_graph(self):
+        self.squad_avg_df["age"] = self.squad_avg_df["age"].astype(float)
+        ax = self.squad_avg_df["age"].plot(kind="bar", color="lightgreen")
+
+        # Set the title and labels
+        plt.title("Average Age of Players by Team")
+        plt.xlabel("Team")
+        plt.ylabel("Average Age")
+
+        # for i, val in enumerate(df['age']):
+        #     ax.text(i, val, str(val), ha='center', va='bottom')
+        # plt.xticks(rotation=0)
+        # Show the plot
+        plt.show()
+        
+    def avg_age_info(self):
+        
+        
 
 
 def main():
     s = Squad()
+    # s.get_squad_df()
+    s.age()
 
 
 if __name__ == "__main__":
