@@ -98,35 +98,7 @@ class Scrape:
         squad_avg.csv : will store avg info about squad
         squad.csv : will store info about players in all teams
         """
-        # # Store squad_dfs into a single csv file
-        # team_urls = self.team_urls
-        # squad_dfs = self.squad_dfs
-
-        # dfs_modified = []
-
-        # # Remove the last two rows from each DataFrame and append them to dfs_modified
-        # for df in squad_dfs:
-        #     df_modified = df.iloc[:-2]  # Exclude the last two rows
-        #     dfs_modified.append(df_modified)
-
-        # # Concatenate the modified DataFrames into a single DataFrame
-        # result_df = pd.concat(dfs_modified, ignore_index=True)
-        # # Drop 2nd column because it is now meaningless
-        # result_df.to_csv("squad.csv", index=True)
-
-        # # Store avg info
-        # squad_avg_rows = []
-        # for df in squad_dfs:
-        #     squad_avg_row = df.iloc[-2]
-        #     squad_avg_rows.append(squad_avg_row)
-        # # Concatenate squad infos to a single df
-        # squad_avg_df = pd.concat(squad_avg_rows, axis=1).T
-        # # Remove columns with NaN values
-        # squad_avg_df = squad_avg_df.dropna(axis=1)
-        # squad_avg_df.set_index("team", inplace=True)
-        # squad_avg_df.to_csv("squad_avg.csv", index=True)
-
-        self.player_df.to_csv("sqaud.csv", index=True)
+        self.player_df.to_csv("squad.csv", index=True)
         self.squad_avg_df.to_csv("squad_avg.csv", index=True)
 
 
@@ -155,14 +127,28 @@ class Squad:
     def squad_avg_df(self):
         return self.squad_avg_df
 
-    def avg_age_graph(self):
-        self.squad_avg_df["age"] = self.squad_avg_df["age"].astype(float)
-        ax = self.squad_avg_df["age"].plot(kind="bar", color="lightgreen")
+    def avg_feature_graph(self, feature: str):
+        """Display avg graph of feature user selects
+
+        Args:
+            feature (str): feature
+        """
+
+        done = False
+
+        while not done:
+            if feature not in self.squad_avg_df.columns:
+                feature = input("Type in valid feature: ")
+            else:
+                done = True
+
+        self.squad_avg_df[feature] = self.squad_avg_df[feature].astype(float)
+        ax = self.squad_avg_df[feature].plot(kind="bar", color="lightgreen")
 
         # Set the title and labels
-        plt.title("Average Age of Players by Team")
+        plt.title(f"Average {feature} of Players by Team")
         plt.xlabel("Team")
-        plt.ylabel("Average Age")
+        plt.ylabel(f"Average {feature}")
 
         # for i, val in enumerate(df['age']):
         #     ax.text(i, val, str(val), ha='center', va='bottom')
@@ -191,4 +177,5 @@ s = Squad()
 # s.avg_age_graph()
 
 # s.squad_avg_df().columns
+s.avg_feature_graph("keafldsf")
 s.max_min_info()
