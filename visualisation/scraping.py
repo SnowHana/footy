@@ -138,7 +138,7 @@ class Squad:
 
         while not done:
             if feature not in self.squad_avg_df.columns:
-                feature = input("Type in valid feature: ")
+                feature = input("Type in valid feature")
             else:
                 done = True
 
@@ -177,5 +177,5 @@ s = Squad()
 # s.avg_age_graph()
 
 # s.squad_avg_df().columns
-s.avg_feature_graph("keafldsf")
+s.avg_feature_graph("")
 s.max_min_info()
