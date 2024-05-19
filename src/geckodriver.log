@@ -1,0 +1,20 @@
+1716098757061	geckodriver	INFO	Listening on 127.0.0.1:51725
+1716098758570	mozrunner::runner	INFO	Running command: MOZ_CRASHREPORTER="1" MOZ_CRASHREPORTER_NO_REPORT="1" MOZ_CRASHREPORTER_SHUTDOWN="1" MOZ_NO_REMOTE="1" "/usr ... e" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/nh/kbd4vyw93l9_cfg59h74rpwh0000gn/T/rust_mozprofileTMVm84"
+*** You are running in headless mode.
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+1716098759470	Marionette	INFO	Marionette enabled
+1716098759927	Marionette	INFO	Listening on port 51732
+Read port: 51732
+1716098760386	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt
+1716098772394	Marionette	INFO	Stopped listening on port 51732
+JavaScript warning: https://cp.transfermarkt.com/chunks/cp-chunk-cmp-sourcepoint.20240515084128-0853e47e91.3e1cafbe8b370d1a62b6.js, line 1: Script terminated by timeout at:
+11272/g/</i/<@https://cp.transfermarkt.com/chunks/cp-chunk-cmp-sourcepoint.20240515084128-0853e47e91.3e1cafbe8b370d1a62b6.js:1:2565
+
+JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
+JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
+JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
+JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
+JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
+JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
