@@ -43,3 +43,24 @@ Read port: 49757
 JavaScript warning: https://cp.transfermarkt.com/chunks/cp-chunk-cmp-sourcepoint.20240515084128-0853e47e91.3e1cafbe8b370d1a62b6.js, line 1: Script terminated by timeout at:
 11272/g/</i/<@https://cp.transfermarkt.com/chunks/cp-chunk-cmp-sourcepoint.20240515084128-0853e47e91.3e1cafbe8b370d1a62b6.js:1:2565
 
+1716095587068	geckodriver	INFO	Listening on 127.0.0.1:51203
+1716095588391	mozrunner::runner	INFO	Running command: MOZ_CRASHREPORTER="1" MOZ_CRASHREPORTER_NO_REPORT="1" MOZ_CRASHREPORTER_SHUTDOWN="1" MOZ_NO_REMOTE="1" "/usr ... e" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/nh/kbd4vyw93l9_cfg59h74rpwh0000gn/T/rust_mozprofileuRInJR"
+*** You are running in headless mode.
+*** You are running in headless mode.
+*** You are running in headless mode.
+[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt
+1716095604991	geckodriver	INFO	Listening on 127.0.0.1:51242
+1716095606690	mozrunner::runner	INFO	Running command: MOZ_CRASHREPORTER="1" MOZ_CRASHREPORTER_NO_REPORT="1" MOZ_CRASHREPORTER_SHUTDOWN="1" MOZ_NO_REMOTE="1" "/usr ... e" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/nh/kbd4vyw93l9_cfg59h74rpwh0000gn/T/rust_mozprofilemqX6ZQ"
+*** You are running in headless mode.
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+1716095607420	Marionette	INFO	Marionette enabled
+1716095609909	Marionette	INFO	Listening on port 51249
+Read port: 51249
+1716095610499	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt
+1716095623753	Marionette	INFO	Stopped listening on port 51249
+JavaScript warning: https://cp.transfermarkt.com/chunks/cp-chunk-cmp-sourcepoint.20240515084128-0853e47e91.3e1cafbe8b370d1a62b6.js, line 1: Script terminated by timeout at:
+11272/g/</i/<@https://cp.transfermarkt.com/chunks/cp-chunk-cmp-sourcepoint.20240515084128-0853e47e91.3e1cafbe8b370d1a62b6.js:1:2565
+
+1716096522203	addons.xpi	ERROR	System addon update list error SyntaxError: XMLHttpRequest.open: 'http://%(server)s/dummy-system-addons.xml' is not a valid URL.
