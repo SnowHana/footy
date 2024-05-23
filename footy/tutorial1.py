@@ -23,7 +23,7 @@ def admin():
     # 1. Function with no param
     # return redirect(url_for("home"))
 
-    return redirect
+    return redirect(url_for("user", name="Admin!"))
 
 
 if __name__ == "__main__":
