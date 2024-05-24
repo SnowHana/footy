@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Premier League Squad Info</title>
+</head>
+<body>
+    <h1>Average {{ plot.title }} by Team</h1>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.0"></script>
+    <canvas id="myChart"></canvas>
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {{ plot | safe }}); // Pass plot data as JSON using safe filter
+    </script>
+</body>
+</html>

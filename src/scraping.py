@@ -106,8 +106,8 @@ class Squad:
     def __init__(self) -> None:
         # Check if csv file exists
         # NOTE: this will break if cwd changes....
-        squad_path = "./squad.csv"
-        squad_avg_path = "./squad_avg.csv"
+        squad_path = "./data/squad.csv"
+        squad_avg_path = "./data/squad_avg.csv"
         if not (os.path.isfile(squad_path) and os.path.isfile(squad_avg_path)):
             # File doesnt exist
             try:
@@ -138,7 +138,9 @@ class Squad:
 
         while not done:
             if feature not in self.squad_avg_df.columns:
-                feature = input("Type in valid feature")
+                print("Please type in valid feature.")
+                print(f"Valid features: {self.squad_avg_df.columns}")
+                feature = input("Type: ")
             else:
                 done = True
 

@@ -18,3 +18,17 @@ JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4
 JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
 JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
 JavaScript error: https://tmsi.akamaized.net/js/custom-element-globals/index-db4c0802.js, line 1729: TypeError: Cstr is undefined
+1716497563093	geckodriver	INFO	Listening on 127.0.0.1:50863
+1716497564627	mozrunner::runner	INFO	Running command: MOZ_CRASHREPORTER="1" MOZ_CRASHREPORTER_NO_REPORT="1" MOZ_CRASHREPORTER_SHUTDOWN="1" MOZ_NO_REMOTE="1" "/usr ... e" "-headless" "-foreground" "-no-remote" "-profile" "/var/folders/nh/kbd4vyw93l9_cfg59h74rpwh0000gn/T/rust_mozprofile4OIKHi"
+*** You are running in headless mode.
+console.warn: services.settings: Ignoring preference override of remote settings server
+console.warn: services.settings: Allow by setting MOZ_REMOTE_SETTINGS_DEVTOOLS=1 in the environment
+1716497565098	Marionette	INFO	Marionette enabled
+1716497565593	Marionette	INFO	Listening on port 50874
+Read port: 50874
+1716497566070	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt
+1716497580181	Marionette	INFO	Stopped listening on port 50874
+JavaScript warning: https://cp.transfermarkt.com/chunks/cp-chunk-cmp-sourcepoint.20240523075605-d102b310d0.3e1cafbe8b370d1a62b6.js, line 1: Script terminated by timeout at:
+11272/g/</i/<@https://cp.transfermarkt.com/chunks/cp-chunk-cmp-sourcepoint.20240523075605-d102b310d0.3e1cafbe8b370d1a62b6.js:1:2565
+
