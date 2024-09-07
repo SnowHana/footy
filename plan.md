@@ -40,4 +40,13 @@ For more complex applications or large datasets, it's recommended to use a tool 
 > So use SQLite for now on, and move on to postgre sql later on
 
 
-### P
+### Progress
+#### 8th Sep
+
+- Forget about automatic update about scraping cuz thats too aids
+    - Later on we can add it. 
+    - https://www.youtube.com/watch?v=rfM3Jli81fU
+
+- Right now finish scraping Standard Stats about Current season or any other season
+- Then, we can do sth like importing an alr existing csv file into a django model
+- Display a single player profile?
