@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "base.apps.BaseConfig",
+    "players.apps.PlayersConfig",
+    "scrapers.apps.ScrapersConfig",
 ]
 
 MIDDLEWARE = [
