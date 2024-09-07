@@ -50,3 +50,4 @@ For more complex applications or large datasets, it's recommended to use a tool 
 - Right now finish scraping Standard Stats about Current season or any other season
 - Then, we can do sth like importing an alr existing csv file into a django model
 - Display a single player profile?
+https://github.com/eddwebster/football_analytics/blob/master/notebooks/5_data_analysis_and_projects/england_euro_2020/StatsBomb%20EURO%202020%20Data%20Analysis.ipynb
