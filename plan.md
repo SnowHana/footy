@@ -12,6 +12,9 @@
 ## Plan
 1. Website - Django should be fine
 2. Battle..I'm not sure atm but probs use some deep learning shit
+3. Scraping : https://www.youtube.com/watch?v=rfM3Jli81fU
+https://github.com/hoyishian/footballwebscraper
+
 
 ### PostgreSQL vs Sqlite
 Migration from SQLite to PostgreSQL can be relatively straightforward, especially if you're starting with a small project.
