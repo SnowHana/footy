@@ -51,3 +51,11 @@ For more complex applications or large datasets, it's recommended to use a tool 
 - Then, we can do sth like importing an alr existing csv file into a django model
 - Display a single player profile?
 https://github.com/eddwebster/football_analytics/blob/master/notebooks/5_data_analysis_and_projects/england_euro_2020/StatsBomb%20EURO%202020%20Data%20Analysis.ipynb
+
+
+#### 9th Sep
+- Working on scraping part
+- csv file storing indiv player profile of premier league is done?
+- We can use compare top 5 similar players in fbref
+> Sth is bit off cuz it compares raw stat....I can do sth like add a scaling factor cuz of team and league difference?
+
