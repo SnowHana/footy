@@ -136,5 +136,6 @@ class Scrape:
 
 
 scraper = Scrape(STANDINGS_URL, 2)
-
-scraper.save_csv()
+# scraper.get_teams_urls()
+res = scraper._scrape_team_ss("https://fbref.com/en/squads/8602292d/Aston-Villa-Stats")
+print(res)
