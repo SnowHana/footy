@@ -6,7 +6,7 @@ import pandas as pd
 import random
 
 STANDINGS_URL = "https://fbref.com/en/comps/9/Premier-League-Stats"
-
+BIG5_PLYAERS_URL = "https://fbref.com/en/comps/Big5/2023-2024/stats/players/2023-2024-Big-5-European-Leagues-Stats"
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.4951.64 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1 Safari/605.1.15",
@@ -127,6 +127,74 @@ class Scrape:
         ss_dfs = [self._scrape_team_ss(url) for url in self.team_urls]
         return pd.concat(ss_dfs)
 
+    def _add_per_90s_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Add -90 tag to column standing for a per 90 stats
+        Assume that first half stands for entire season stat, and last half stands for per 90s stat
+
+
+        Args:
+            df (pd.DataFrame): _description_
+
+        Returns:
+            pd.DataFrame: modified column index
+        """
+
+        duplicate_columns = df.columns[df.columns.duplicated()]
+        occured = []
+        cols = []
+        count = 1
+        stat_90s = False
+        for column in df.columns:
+            if not stat_90s:
+                if column in duplicate_columns and column in occured:
+                    # Means we are now in 90s stats
+                    cols.append(f"{column}-90")
+                    continue
+                else:
+                    occured.append(column)
+                    cols.append(column)
+            else:
+                cols.append(f"{column}-90")
+
+        df.columns = cols
+
+        return df
+
+    def scrape_big5_players_ss(self, big5_url) -> pd.DataFrame:
+        """Scrape big 5 players standard stats data from fbref
+
+        Args:
+            big5_url (_type_): fbref url of big5 players standard stats
+
+        Returns:
+            pd.DataFrame: _description_
+        """
+
+        html_page = self._fetch_standings_page(big5_url)
+        # soup = self._parse_standings_page(big5_url)
+        try:
+            df = pd.read_html(html_page)[0]
+            df.columns = df.columns.droplevel()
+            # Drop Rk Player Natio etc stuff
+            df = df[df["Rk"] != "Rk"]
+            # Drop first RK row cuz we dont really need it
+            df = df.drop("Rk", axis=1)
+            # Make index cts
+            df.reset_index(drop=True, inplace=True)
+
+            # Drop Match column cuz they dont do anything atm
+            df = df.drop("Matches", axis=1)
+
+            # Add -90 to per 90s stat
+            df = self._add_per_90s_columns(df)
+
+            # Save it to csv
+            df.to_csv("standard_stats_big5.csv")
+        except Exception as e:
+            print(f"ERROR: Sth went wrong during cleaning df {e}")
+
+        return df
+
     def save_csv(self, file_path: str = "standard_stats.csv") -> None:
         try:
             self.scrape_all_teams_ss().to_csv(file_path)
@@ -137,5 +205,6 @@ class Scrape:
 
 scraper = Scrape(STANDINGS_URL, 2)
 # scraper.get_teams_urls()
-res = scraper._scrape_team_ss("https://fbref.com/en/squads/8602292d/Aston-Villa-Stats")
-print(res)
+# res = scraper._scrape_team_ss("https://fbref.com/en/squads/8602292d/Aston-Villa-Stats")
+# print(res)
+scraper.scrape_big5_players_ss(BIG5_PLYAERS_URL)
