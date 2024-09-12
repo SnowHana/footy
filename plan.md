@@ -71,6 +71,11 @@ I can start working on AI stuff cuz its using apis anyway?
 
 Probs forget about django atm,
 
+#### 10th Sep
+- Finished jupyter notebook of big 5 player standard stats scraper
+- Probs better to set up an obsidian vault for logging i guess
+- Started working on Rating system for an indiv player
+
 ---
 
 # Note
