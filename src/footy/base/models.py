@@ -1,14 +1,51 @@
 from django.db import models
+from django.utils.text import slugify
+from django.urls import reverse
 
 
-class PlayerStats(models.Model):
-    player = models.CharField(max_length=100)
-    nation = models.CharField(max_length=100)
-    position = models.CharField(max_length=10)
-    squad = models.CharField(max_length=100)
-    competition = models.CharField(max_length=100)
+class Team(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=255, unique=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)  # Automatically generate slug from the name
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse("team_detail", args=[self.slug])
+
+
+class Player(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=255, unique=True)
     age = models.IntegerField()
     born = models.IntegerField()
+    nation = models.CharField(max_length=100)
+    position = models.CharField(max_length=10)
+    team = models.ForeignKey(Team, related_name="player", on_delete=models.CASCADE)
+
+    def __str__(self) -> str:
+        return f"{self.name} : {self.team}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)  # Generate slug from name
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse("player_detail", args=[self.slug])
+
+
+class PlayerStat(models.Model):
+    player = models.OneToOneField(
+        Player, on_delete=models.CASCADE, related_name="stats"
+    )
+    slug = models.SlugField(max_length=255, unique=True)
+    competition = models.CharField(max_length=100)
     mp = models.IntegerField()  # Matches played
     starts = models.IntegerField()
     minutes = models.IntegerField()
@@ -40,7 +77,17 @@ class PlayerStats(models.Model):
     npxg_plus_xag_per_90 = models.FloatField()  # npxG+xAG-90
 
     def __str__(self):
-        return self.player
+        return f"Stats for {self.player}"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)  # Generate slug from name
+        super().save(*args, **kwargs)
 
     class Meta:
-        ordering = ["player", "age"]
+        ordering = [
+            "player",
+        ]
+
+    def get_absolute_url(self):
+        return reverse("player_stats_detail", args=[self.player.slug])
