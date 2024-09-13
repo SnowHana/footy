@@ -1,0 +1,22 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+<div class="players-all-container">
+
+    <div>
+        <h3>
+            {% for player in players %}
+            <div>
+                <li>@{{player.name}} : {{player.team}}</li>
+                <hr>
+            </div>
+            {% endfor %}
+        </h3>
+    </div>
+
+
+
+</div>
+
+{% endblock content %}
