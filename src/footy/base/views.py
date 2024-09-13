@@ -21,7 +21,7 @@ def players_all(request) -> HttpResponse:
 
 
 def player_stats(request, slug):
-    player_sta  ts = get_object_or_404(
+    player_stats = get_object_or_404(
         PlayerStat,
         slug=slug,
     )
