@@ -2,28 +2,50 @@
 
 {% block content %}
 
-<div class="players-all-container">
+<h1>{{ player_stats.player.name }} - {{ player_stats.competition }} Stats</h1>
 
-    <div>
-        <h1>{{ player_stats.player.name }} - {{ player_stats.competition }} Stats</h1>
+<table class='table' border="1">
+    <thead>
+        <tr>
+            <th>Field</th>
+            <th>Value</th>
+        </tr>
 
-        <table border="1">
-            <tr>
-                <th>Field</th>
-                <th>Value</th>
-            </tr>
-            {% for field_name, field_value in fields %}
-            <tr>
-                <td>{{ field_name }}</td>
-                <td>{{ field_value }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+    </thead>
 
-    </div>
+    <tbody>
 
+        {% for field_name, field_value in fields %}
+        <tr class="clickable-row" data-feature="{{ field_name }}">
+            <td>{{ field_name }}</td>
+            <td>{{ field_value }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-
+<h2>Graph</h2>
+<div id="graph-container">
+    <!-- The graph will be dynamically inserted here -->
 </div>
+
+<script>
+    $(document).ready(function () {
+        $(".clickable-row").click(function () {
+            var feature = $(this).data("feature");
+
+            $.ajax({
+                url: "{% url 'generate_graph' player_stats.slug %}", // Django URL for graph generation
+                data: {
+                    'feature': feature
+                },
+                success: function (response) {
+                    // Display the graph in the #graph-container
+                    $('#graph-container').html('<img src="data:image/png;base64,' + response.graph + '" />');
+                }
+            });
+        });
+    });
+</script>
 
 {% endblock content %}

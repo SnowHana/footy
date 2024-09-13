@@ -1,9 +1,13 @@
-from django.http import HttpResponse
+import io
+import base64
+import matplotlib.pyplot as plt
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import DetailView
 from .models import Player, Team, PlayerStat
+import matplotlib
 
-
+matplotlib.use("Agg")  # Ensure non-GUI backend for rendering on macOS
 # Create your views here.
 
 
@@ -36,6 +40,42 @@ def player_stats(request, slug):
 
     context = {"player_stats": player_stats, "fields": fields}
     return render(request, "base/player_stats.html", context)
+
+
+def generate_graph(request, slug):
+    feature = request.GET.get("feature", None)  # Get the feature from the AJAX request
+
+    # Ensure correct object retrieval or 404 if not found
+    player_stat = get_object_or_404(PlayerStat, slug=slug)
+
+    # Create a simple graph based on the feature clicked
+    plt.figure(figsize=(6, 4))
+    plt.title(f"{player_stat.player.name} - {feature}")
+
+    # Example: Display the clicked feature value as a bar graph
+    feature_value = getattr(
+        player_stat, feature.lower().replace(" ", "_"), None
+    )  # Convert feature name to field name
+
+    if feature_value is not None:
+        plt.bar([feature], [feature_value])
+    else:
+        plt.text(
+            0.5,
+            0.5,
+            "Feature not found",
+            horizontalalignment="center",
+            verticalalignment="center",
+        )
+
+    # Convert the graph to a PNG image and encode it as base64
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format="png")
+    buffer.seek(0)
+    graph_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    buffer.close()
+
+    return JsonResponse({"graph": graph_base64})
 
 
 # class (DetailView):
