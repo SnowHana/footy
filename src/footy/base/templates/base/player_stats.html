@@ -1,0 +1,29 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+<div class="players-all-container">
+
+    <div>
+        <h1>{{ player_stats.player.name }} - {{ player_stats.competition }} Stats</h1>
+
+        <table border="1">
+            <tr>
+                <th>Field</th>
+                <th>Value</th>
+            </tr>
+            {% for field_name, field_value in fields %}
+            <tr>
+                <td>{{ field_name }}</td>
+                <td>{{ field_value }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+
+
+
+</div>
+
+{% endblock content %}
