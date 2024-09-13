@@ -6,14 +6,19 @@ from .models import Player, PlayerStat, Team
 # Register your models here.
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
-    list_display = ("name",)  # Fields to display in the list view
+    list_display = ("name", "slug")  # Fields to display in the list view
     search_fields = ("name",)  # Fields to include in the search functionality
     ordering = ("name",)  # Default ordering of the list
 
 
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ("name", "position", "team")  # Fields to display in the list view
+    list_display = (
+        "name",
+        "position",
+        "team",
+        "slug",
+    )  # Fields to display in the list view
     search_fields = (
         "name",
         "position",
@@ -30,6 +35,7 @@ class PlayerStatAdmin(admin.ModelAdmin):
         "competition",
         "goals",
         "assists",
+        "slug",
     )  # Fields to display in the list view
     search_fields = (
         "player__name",

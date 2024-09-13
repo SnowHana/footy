@@ -1,0 +1,55 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+<div class="players-all-container">
+
+    <div>
+        <h1>{{ player_stats.player.name }} - {{ player_stats.competition }} Stats</h1>
+
+        <table border="1">
+            <tr>
+                <th>Matches Played</th>
+                <td>{{ player_stats.mp }}</td>
+            </tr>
+            <tr>
+                <th>Starts</th>
+                <td>{{ player_stats.starts }}</td>
+            </tr>
+            <tr>
+                <th>Minutes</th>
+                <td>{{ player_stats.minutes }}</td>
+            </tr>
+            <tr>
+                <th>Goals</th>
+                <td>{{ player_stats.goals }}</td>
+            </tr>
+            <tr>
+                <th>Assists</th>
+                <td>{{ player_stats.assists }}</td>
+            </tr>
+            <tr>
+                <th>Goals + Assists</th>
+                <td>{{ player_stats.goals_assists }}</td>
+            </tr>
+            <tr>
+                <th>Expected Goals</th>
+                <td>{{ player_stats.xg }}</td>
+            </tr>
+            <tr>
+                <th>Non-penalty Expected Goals</th>
+                <td>{{ player_stats.npxg }}</td>
+            </tr>
+            <tr>
+                <th>Expected Assists</th>
+                <td>{{ player_stats.xag }}</td>
+            </tr>
+            <!-- Add more rows for other stats if needed -->
+        </table>
+    </div>
+
+
+
+</div>
+
+{% endblock content %}

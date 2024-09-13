@@ -72,9 +72,21 @@ I can start working on AI stuff cuz its using apis anyway?
 Probs forget about django atm,
 
 #### 10th Sep
+
 - Finished jupyter notebook of big 5 player standard stats scraper
 - Probs better to set up an obsidian vault for logging i guess
 - Started working on Rating system for an indiv player
+
+#### 13th Sep
+
+- Worked on Django part.
+- Created view of **players_all** : Display upto 50 plyers, can be as sth of activity feed
+
+##### TODO:
+
+- Other views (Player detail view, Team detail view)
+- Add other info about team: Stadium, team size, supporters, city etc
+- Implement Graph.
 
 ---
 
