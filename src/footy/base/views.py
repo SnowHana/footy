@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.views.generic import DetailView
 from .models import Player, Team, PlayerStat
 
@@ -7,17 +7,35 @@ from .models import Player, Team, PlayerStat
 # Create your views here.
 
 
-def home(request):
+def home(request) -> HttpResponse:
     context = {}
     # return render(request, "base/home.html", context)
     return HttpResponse("HELLO")
 
 
-def players_all(request):
+def players_all(request) -> HttpResponse:
     players = Player.objects.all()[:50]
     context = {"players": players}
 
     return render(request, "base/players_all.html", context)
+
+
+def player_stats(request, slug):
+    player_sta  ts = get_object_or_404(
+        PlayerStat,
+        slug=slug,
+    )
+
+    # Get fileds of Player Stats value
+
+    fields = [
+        (field.verbose_name, field.value_from_object(player_stats))
+        for field in PlayerStat._meta.fields
+        if field.name not in ["id", "slug", "player", "competition"]
+    ]
+
+    context = {"player_stats": player_stats, "fields": fields}
+    return render(request, "base/player_stats.html", context)
 
 
 # class (DetailView):
