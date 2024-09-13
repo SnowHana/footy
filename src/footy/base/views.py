@@ -21,12 +21,20 @@ def players_all(request) -> HttpResponse:
 
 
 def player_stats(request, slug):
-    player_stats = get_object_or_404(
+    player_sta  ts = get_object_or_404(
         PlayerStat,
         slug=slug,
     )
 
-    context = {"player_stats": player_stats}
+    # Get fileds of Player Stats value
+
+    fields = [
+        (field.verbose_name, field.value_from_object(player_stats))
+        for field in PlayerStat._meta.fields
+        if field.name not in ["id", "slug", "player", "competition"]
+    ]
+
+    context = {"player_stats": player_stats, "fields": fields}
     return render(request, "base/player_stats.html", context)
 
 

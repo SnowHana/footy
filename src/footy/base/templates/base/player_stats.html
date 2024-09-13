@@ -9,43 +9,17 @@
 
         <table border="1">
             <tr>
-                <th>Matches Played</th>
-                <td>{{ player_stats.mp }}</td>
+                <th>Field</th>
+                <th>Value</th>
             </tr>
+            {% for field_name, field_value in fields %}
             <tr>
-                <th>Starts</th>
-                <td>{{ player_stats.starts }}</td>
+                <td>{{ field_name }}</td>
+                <td>{{ field_value }}</td>
             </tr>
-            <tr>
-                <th>Minutes</th>
-                <td>{{ player_stats.minutes }}</td>
-            </tr>
-            <tr>
-                <th>Goals</th>
-                <td>{{ player_stats.goals }}</td>
-            </tr>
-            <tr>
-                <th>Assists</th>
-                <td>{{ player_stats.assists }}</td>
-            </tr>
-            <tr>
-                <th>Goals + Assists</th>
-                <td>{{ player_stats.goals_assists }}</td>
-            </tr>
-            <tr>
-                <th>Expected Goals</th>
-                <td>{{ player_stats.xg }}</td>
-            </tr>
-            <tr>
-                <th>Non-penalty Expected Goals</th>
-                <td>{{ player_stats.npxg }}</td>
-            </tr>
-            <tr>
-                <th>Expected Assists</th>
-                <td>{{ player_stats.xag }}</td>
-            </tr>
-            <!-- Add more rows for other stats if needed -->
+            {% endfor %}
         </table>
+
     </div>
 
 
