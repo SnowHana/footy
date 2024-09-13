@@ -13,19 +13,26 @@ def home(request):
     return HttpResponse("HELLO")
 
 
-class PlayerDetailView(DetailView):
-    model = Player
-    template_name = "player_detail.html"
-    context_object_name = "player"
+def players_all(request):
+    players = Player.objects.all()[:50]
+    context = {"players": players}
+
+    return render(request, "base/players_all.html", context)
 
 
-class TeamDetailView(DetailView):
-    model = Team
-    template_name = "team_detail.html"
-    context_object_name = "team"
+# class (DetailView):
+#     model = Player
+#     template_name = "player_detail.html"
+#     context_object_name = "player"
 
 
-class PlayerStatDetailView(DetailView):
-    model = PlayerStat
-    template_name = "player_stats_detail.html"
-    context_object_name = "player_stats"
+# class TeamDetailView(DetailView):
+#     model = Team
+#     template_name = "team_detail.html"
+#     context_object_name = "team"
+
+
+# class PlayerStatDetailView(DetailView):
+#     model = PlayerStat
+#     template_name = "player_stats_detail.html"
+#     context_object_name = "player_stats"
