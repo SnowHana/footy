@@ -43,6 +43,15 @@ def player_stats(request, slug):
 
 
 def generate_graph(request, slug):
+    """Generate a graph for a player stat detailed view
+
+    Args:
+        request (_type_): _description_
+        slug (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     feature = request.GET.get("feature", None)  # Get the feature from the AJAX request
 
     # Ensure correct object retrieval or 404 if not found
