@@ -35,7 +35,6 @@ class PlayerStatAdmin(admin.ModelAdmin):
         "competition",
         "goals",
         "assists",
-        "slug",
     )  # Fields to display in the list view
     search_fields = (
         "player__name",

@@ -47,7 +47,7 @@ class PlayerStat(models.Model):
         related_name="playerstats",
         help_text="Player associated with this player stat.",
     )
-    slug = models.SlugField(max_length=255, unique=True)
+    # slug = models.SlugField(max_length=255, unique=True)
     competition = models.CharField(max_length=100)
     mp = models.IntegerField()  # Matches played
     starts = models.IntegerField()
@@ -88,8 +88,8 @@ class PlayerStat(models.Model):
         return f"Stats for {self.player}"
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)  # Generate slug from name
+        # if not self.slug:
+        #     self.slug = slugify(self.name)  # Generate slug from name
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):

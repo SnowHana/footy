@@ -29,7 +29,7 @@ def players_all(request) -> HttpResponse:
 def player_stats(request, slug):
     player_stats = get_object_or_404(
         PlayerStat,
-        slug=slug,
+        player__slug=slug,
     )
 
     # Get fileds of Player Stats value
@@ -37,7 +37,7 @@ def player_stats(request, slug):
     fields = [
         (field.verbose_name, field.value_from_object(player_stats))
         for field in PlayerStat._meta.fields
-        if field.name not in ["id", "slug", "player", "competition"]
+        if field.name not in ["id", "player", "competition"]
     ]
 
     context = {"player_stats": player_stats, "fields": fields}
@@ -51,7 +51,7 @@ def generate_graph(request, slug):
         return JsonResponse({"error": "Feature is required"}, status=400)
 
     # Fetch the player's stats and necessary attributes using get_object_or_404
-    player_stat = get_object_or_404(PlayerStat, slug=slug)
+    player_stat = get_object_or_404(PlayerStat, player__slug=slug)
     player = player_stat.player
     feature_field = feature.lower().replace(" ", "_")
     player_value = getattr(player_stat, feature_field, None)
