@@ -44,7 +44,7 @@ class PlayerStat(models.Model):
     player = models.OneToOneField(
         Player, on_delete=models.CASCADE, related_name="stats"
     )
-    slug = models.SlugField(max_length=255, unique=True)
+    # slug = models.SlugField(max_length=255, unique=True)
     competition = models.CharField(max_length=100)
     mp = models.IntegerField()  # Matches played
     starts = models.IntegerField()
@@ -80,8 +80,8 @@ class PlayerStat(models.Model):
         return f"Stats for {self.player}"
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)  # Generate slug from name
+        # if not self.slug:
+        #     self.slug = slugify(self.name)  # Generate slug from name
         super().save(*args, **kwargs)
 
     class Meta:
