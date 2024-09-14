@@ -42,7 +42,10 @@ class Player(models.Model):
 
 class PlayerStat(models.Model):
     player = models.OneToOneField(
-        Player, on_delete=models.CASCADE, related_name="stats"
+        Player,
+        on_delete=models.CASCADE,
+        related_name="playerstats",
+        help_text="Player associated with this player stat.",
     )
     # slug = models.SlugField(max_length=255, unique=True)
     competition = models.CharField(max_length=100)
@@ -76,6 +79,11 @@ class PlayerStat(models.Model):
     npxg_per_90 = models.FloatField()  # npxG-90
     npxg_plus_xag_per_90 = models.FloatField()  # npxG+xAG-90
 
+    class Meta:
+        ordering = [
+            "player",
+        ]
+
     def __str__(self):
         return f"Stats for {self.player}"
 
@@ -83,11 +91,6 @@ class PlayerStat(models.Model):
         # if not self.slug:
         #     self.slug = slugify(self.name)  # Generate slug from name
         super().save(*args, **kwargs)
-
-    class Meta:
-        ordering = [
-            "player",
-        ]
 
     def get_absolute_url(self):
         return reverse("player_stats_detail", args=[self.player.slug])
