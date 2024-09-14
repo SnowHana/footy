@@ -1,3 +1,5 @@
+import base64
+import io
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from .models import Player, Team, PlayerStat
@@ -81,22 +83,36 @@ def generate_graph(request, slug):
         "Nationality Avg",
     ]
     values = [player_value, league_avg, age_group_avg, position_avg, nationality_avg]
-
     # Create the Plotly bar graph
-    fig = go.Figure([go.Bar(x=categories, y=values, text=values, textposition="auto")])
+    fig = go.Figure()
 
+    # Add bars with different colors
+    colors = ["black", "gray", "gray", "gray", "gray"]
+    for i, (category, value) in enumerate(zip(categories, values)):
+        fig.add_trace(
+            go.Bar(
+                x=[category],
+                y=[value],
+                name=category,
+                marker_color=colors[i],
+                text=[f"{value:.2f}"],  # Display value on hover
+                textposition="auto",  # Position text labels on top of bars
+                width=0.5,
+            )
+        )
+
+    # Update layout for better interaction
     fig.update_layout(
         title=f"{player.name} - {feature} Comparison",
         xaxis_title="Category",
         yaxis_title="Value",
+        barmode="group",
         hovermode="x unified",
     )
 
-    # Convert the Plotly figure to JSON to be used in JavaScript
+    # Convert the figure to a PNG image and encode it as base64
     graph_json = fig.to_json()
-
     return JsonResponse({"graph_json": graph_json})
-
     # # Convert the graph to a PNG image and encode it as base64
     # buffer = io.BytesIO()
     # plt.savefig(buffer, format="png")
