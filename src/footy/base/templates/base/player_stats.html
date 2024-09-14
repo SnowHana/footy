@@ -25,9 +25,8 @@
 </table>
 
 <h2>Graph</h2>
-<div id="graph-container">
-    <!-- The graph will be dynamically inserted here -->
-</div>
+<div id="graph-container" style="width: 100%; height: 600px;"></div>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
 <script>
     $(document).ready(function () {
@@ -40,12 +39,16 @@
                     'feature': feature
                 },
                 success: function (response) {
-                    // Display the graph in the #graph-container
-                    $('#graph-container').html('<img src="data:image/png;base64,' + response.graph + '" />');
+                    // Render the Plotly graph
+                    var graphData = JSON.parse(response.graph_json);
+                    Plotly.react('graph-container', graphData.data, graphData.layout);
                 }
             });
         });
     });
 </script>
+
+
+
 
 {% endblock content %}
