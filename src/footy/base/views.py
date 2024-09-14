@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404, render
 from django.views.generic import DetailView
 from .models import Player, Team, PlayerStat
 import matplotlib
+from django.db.models import Avg
+
 
 matplotlib.use("Agg")  # Ensure non-GUI backend for rendering on macOS
 # Create your views here.
@@ -43,39 +45,53 @@ def player_stats(request, slug):
 
 
 def generate_graph(request, slug):
-    """Generate a graph for a player stat detailed view
-
-    Args:
-        request (_type_): _description_
-        slug (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
     feature = request.GET.get("feature", None)  # Get the feature from the AJAX request
 
-    # Ensure correct object retrieval or 404 if not found
+    if not feature:
+        return JsonResponse({"error": "Feature is required"}, status=400)
+
+    # Fetch the player's stats and necessary attributes using get_object_or_404
     player_stat = get_object_or_404(PlayerStat, slug=slug)
+    player = player_stat.player
+    feature_field = feature.lower().replace(" ", "_")
+    player_value = getattr(player_stat, feature_field, None)
 
-    # Create a simple graph based on the feature clicked
-    plt.figure(figsize=(6, 4))
-    plt.title(f"{player_stat.player.name} - {feature}")
+    if player_value is None:
+        return JsonResponse({"error": "Feature not found for player"}, status=400)
 
-    # Example: Display the clicked feature value as a bar graph
-    feature_value = getattr(
-        player_stat, feature.lower().replace(" ", "_"), None
-    )  # Convert feature name to field name
+    # Calculate the averages based on competition, age, position, and nationality
+    league_avg = PlayerStat.objects.filter(
+        competition=player_stat.competition
+    ).aggregate(avg_value=Avg(feature_field))["avg_value"]
 
-    if feature_value is not None:
-        plt.bar([feature], [feature_value])
-    else:
-        plt.text(
-            0.5,
-            0.5,
-            "Feature not found",
-            horizontalalignment="center",
-            verticalalignment="center",
-        )
+    age_group_avg = PlayerStat.objects.filter(player__age=player.age).aggregate(
+        avg_value=Avg(feature_field)
+    )["avg_value"]
+
+    position_avg = PlayerStat.objects.filter(
+        player__position=player.position
+    ).aggregate(avg_value=Avg(feature_field))["avg_value"]
+
+    nationality_avg = PlayerStat.objects.filter(player__nation=player.nation).aggregate(
+        avg_value=Avg(feature_field)
+    )["avg_value"]
+
+    # Prepare data for graph
+    categories = [
+        "Player",
+        "League Avg",
+        "Age Group Avg",
+        "Position Avg",
+        "Nationality Avg",
+    ]
+    values = [player_value, league_avg, age_group_avg, position_avg, nationality_avg]
+
+    # Create the bar graph
+    plt.figure(figsize=(8, 6))
+    plt.bar(categories, values, color=["blue", "green", "orange", "red", "purple"])
+    plt.title(f"{player.name} - {feature} Comparison")
+    plt.ylabel("Value")
+    plt.xticks(rotation=45)
 
     # Convert the graph to a PNG image and encode it as base64
     buffer = io.BytesIO()
@@ -85,6 +101,15 @@ def generate_graph(request, slug):
     buffer.close()
 
     return JsonResponse({"graph": graph_base64})
+
+    # # Convert the graph to a PNG image and encode it as base64
+    # buffer = io.BytesIO()
+    # plt.savefig(buffer, format="png")
+    # buffer.seek(0)
+    # graph_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    # buffer.close()
+
+    # return JsonResponse({"graph": graph_base64})
 
 
 # class (DetailView):
