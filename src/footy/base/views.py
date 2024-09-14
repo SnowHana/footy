@@ -1,13 +1,9 @@
-import io
-import base64
-import matplotlib.pyplot as plt
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
-from django.views.generic import DetailView
 from .models import Player, Team, PlayerStat
 import matplotlib
 from django.db.models import Avg
-
+import plotly.graph_objs as go
 
 matplotlib.use("Agg")  # Ensure non-GUI backend for rendering on macOS
 # Create your views here.
@@ -76,7 +72,7 @@ def generate_graph(request, slug):
         avg_value=Avg(feature_field)
     )["avg_value"]
 
-    # Prepare data for graph
+    # Prepare data for the graph
     categories = [
         "Player",
         "League Avg",
@@ -86,21 +82,20 @@ def generate_graph(request, slug):
     ]
     values = [player_value, league_avg, age_group_avg, position_avg, nationality_avg]
 
-    # Create the bar graph
-    plt.figure(figsize=(8, 6))
-    plt.bar(categories, values, color=["blue", "green", "orange", "red", "purple"])
-    plt.title(f"{player.name} - {feature} Comparison")
-    plt.ylabel("Value")
-    plt.xticks(rotation=45)
+    # Create the Plotly bar graph
+    fig = go.Figure([go.Bar(x=categories, y=values, text=values, textposition="auto")])
 
-    # Convert the graph to a PNG image and encode it as base64
-    buffer = io.BytesIO()
-    plt.savefig(buffer, format="png")
-    buffer.seek(0)
-    graph_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-    buffer.close()
+    fig.update_layout(
+        title=f"{player.name} - {feature} Comparison",
+        xaxis_title="Category",
+        yaxis_title="Value",
+        hovermode="x unified",
+    )
 
-    return JsonResponse({"graph": graph_base64})
+    # Convert the Plotly figure to JSON to be used in JavaScript
+    graph_json = fig.to_json()
+
+    return JsonResponse({"graph_json": graph_json})
 
     # # Convert the graph to a PNG image and encode it as base64
     # buffer = io.BytesIO()
