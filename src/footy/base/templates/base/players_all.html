@@ -5,17 +5,20 @@
 <div class="players-all-container">
 
     <div>
-        <h3>
+        <h3>Players List</h3>
+        <ul>
             {% for player in players %}
-            <div>
-                <li>@{{player.name}} : {{player.team}}</li>
-                <hr>
-            </div>
+            <li>
+                <a href="{% url 'player_stats' player.slug %}">
+                    {{ player.name }} </a> - <a>{{ player.team.name }}
+                </a>
+            </li>
+            <hr>
+            {% empty %}
+            <li>No players found.</li>
             {% endfor %}
-        </h3>
+        </ul>
     </div>
-
-
 
 </div>
 
