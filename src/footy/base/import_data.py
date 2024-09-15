@@ -125,11 +125,11 @@ def run():
         player_lookup[player_name] = player
 
         # Handle PlayerStat
-        stats_slug = slugify(f"{player.name}-{team.name}-{row['Comp']}")
+        # stats_slug = slugify(f"{player.name}-{team.name}-{row['Comp']}")
         stats, created = PlayerStat.objects.update_or_create(
             player=player,
             defaults={
-                "slug": stats_slug,
+                # "slug": stats_slug,
                 "competition": row["Comp"],
                 "mp": row["MP"],
                 "starts": row["Starts"],
