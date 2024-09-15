@@ -1,13 +1,10 @@
-import base64
-import io
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from .models import Player, Team, PlayerStat
-import matplotlib
 from django.db.models import Avg
 import plotly.graph_objs as go
 
-matplotlib.use("Agg")  # Ensure non-GUI backend for rendering on macOS
+# matplotlib.use("Agg")  # Ensure non-GUI backend for rendering on macOS
 # Create your views here.
 
 
