@@ -52,6 +52,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/src/transfer_data/players.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/src/transfer_data/transfers.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>
