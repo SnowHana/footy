@@ -1,9 +1,4 @@
-Celery
 Django~=4.1
-django-celery-beat
-django-celery-results
-python-decouple
-redis
 
 requests~=2.32.3
 pandas~=2.2.2
