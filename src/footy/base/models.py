@@ -6,6 +6,14 @@ from django.urls import reverse
 class Club(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=255, unique=True)
+    club_code = models.CharField(max_length=100, default="CR7")
+    # domestic_competition_id = models.
+    elo = models.FloatField(default=1000)
+    squad_size = models.PositiveIntegerField(blank=True, null=True, default=1000)
+    avg_age = models.PositiveIntegerField(blank=True, null=True, default=1000)
+    total_market_value = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True, default=1000
+    )
 
     # elo =
     def __str__(self):
