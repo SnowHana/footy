@@ -3,11 +3,11 @@ from django.utils.text import slugify
 from django.urls import reverse
 
 
-class Team(models.Model):
+class Club(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=255, unique=True)
 
-    elo = 
+    # elo =
     def __str__(self):
         return self.name
 
@@ -17,7 +17,7 @@ class Team(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse("team_detail", args=[self.slug])
+        return reverse("club_detail", args=[self.slug])
 
 
 class Player(models.Model):
@@ -27,10 +27,10 @@ class Player(models.Model):
     born = models.IntegerField()
     nation = models.CharField(max_length=100)
     position = models.CharField(max_length=10)
-    team = models.ForeignKey(Team, related_name="player", on_delete=models.CASCADE)
+    club = models.ForeignKey(Club, related_name="player", on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"{self.name} : {self.team}"
+        return f"{self.name} : {self.club}"
 
     def save(self, *args, **kwargs):
         if not self.slug:
