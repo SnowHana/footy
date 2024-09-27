@@ -1,11 +1,11 @@
 from django.contrib import admin
 
-from .models import Player, PlayerStat, Team
+from .models import Player, PlayerStat, Club
 
 
 # Register your models here.
-@admin.register(Team)
-class TeamAdmin(admin.ModelAdmin):
+@admin.register(Club)
+class ClubAdmin(admin.ModelAdmin):
     list_display = ("name", "slug")  # Fields to display in the list view
     search_fields = ("name",)  # Fields to include in the search functionality
     ordering = ("name",)  # Default ordering of the list
@@ -16,15 +16,15 @@ class PlayerAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "position",
-        "team",
+        "club",
         "slug",
     )  # Fields to display in the list view
     search_fields = (
         "name",
         "position",
-        "team__name",
+        "club__name",
     )  # Fields to include in the search functionality
-    list_filter = ("team",)  # Add filters for easy navigation
+    list_filter = ("club",)  # Add filters for easy navigation
     ordering = ("name",)  # Default ordering of the list
 
 
