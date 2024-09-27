@@ -1,7 +1,7 @@
 import pandas as pd
 from django.conf import settings
 from django.utils.text import slugify
-from base.models import Player, PlayerStat, Team
+from base.models import Player, PlayerStat, Club
 
 
 def run():
@@ -81,7 +81,7 @@ def run():
     df["npxG+xAG-90"] = df["npxG+xAG-90"].astype(float)
 
     # Lists to hold instances for bulk operations
-    teams_to_update_or_create = []
+    clubs_to_update_or_create = []
     players_to_update_or_create = []
     player_stats_to_create = []
     players_to_update = []
@@ -92,19 +92,19 @@ def run():
 
     # Iterate through the DataFrame
     for index, row in df.iterrows():
-        # Handle Team
-        team_name = row["Squad"]
-        team_slug = slugify(team_name)
-        team, created = Team.objects.update_or_create(
-            name=team_name, defaults={"slug": team_slug}
+        # Handle club
+        club_name = row["Squad"]
+        club_slug = slugify(club_name)
+        club, created = Club.objects.update_or_create(
+            name=club_name, defaults={"slug": club_slug}
         )
         if not created:
             # Means we need to update
-            teams_to_update_or_create.append(team)
+            clubs_to_update_or_create.append(club)
 
         # Handle Player
         player_name = row["Player"]
-        player_slug = slugify(f"{player_name}-{team.name}")
+        player_slug = slugify(f"{player_name}-{club.name}")
         player, created = Player.objects.update_or_create(
             slug=player_slug,
             defaults={
@@ -113,7 +113,7 @@ def run():
                 "born": row["Born"],
                 "nation": row["Nation"],
                 "position": row["Pos"],
-                "team": team,
+                "club": club,
             },
         )
         if created:
@@ -125,7 +125,7 @@ def run():
         player_lookup[player_name] = player
 
         # Handle PlayerStat
-        # stats_slug = slugify(f"{player.name}-{team.name}-{row['Comp']}")
+        # stats_slug = slugify(f"{player.name}-{club.name}-{row['Comp']}")
         stats, created = PlayerStat.objects.update_or_create(
             player=player,
             defaults={
@@ -168,9 +168,9 @@ def run():
             player_stats_to_update.append(stats)
 
     # Perform bulk create and update operations
-    Team.objects.bulk_update(
-        teams_to_update_or_create,
-        fields=[field.name for field in Team._meta.fields if field.name != "id"],
+    Club.objects.bulk_update(
+        clubs_to_update_or_create,
+        fields=[field.name for field in Club._meta.fields if field.name != "id"],
     )
     Player.objects.bulk_create(players_to_update_or_create)
     Player.objects.bulk_update(
