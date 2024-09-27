@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
-from .models import Player, Team, PlayerStat
+from .models import Player, Club, PlayerStat
 from django.db.models import Avg
 import plotly.graph_objs as go
 
