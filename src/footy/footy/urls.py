@@ -23,4 +23,5 @@ urlpatterns = [
     path("base/", include("base.urls")),
     path("players/", include("players.urls")),
     path("scrapers/", include("scrapers.urls")),
+    path("elos/", include("elos.urls")),
 ]

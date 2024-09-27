@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "base.apps.BaseConfig",
     "players.apps.PlayersConfig",
     "scrapers.apps.ScrapersConfig",
+    "elos.apps.ElosConfig",
     "django_extensions",
 ]
 
