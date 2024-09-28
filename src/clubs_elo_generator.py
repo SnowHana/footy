@@ -5,7 +5,7 @@ import datetime
 from datetime import datetime
 
 
-def import_data_from_csv() -> list[pd.DataFrame]:
+def import_data_from_csv() -> dict:
     """Read data from csv files (prepared by transfermrkt dataset)
 
     Returns:
@@ -17,7 +17,8 @@ def import_data_from_csv() -> list[pd.DataFrame]:
     BASE_DIR = Path(__file__).resolve().parent
 
     # # Build the path to the data directory
-    DATA_DIR = BASE_DIR / "data"
+    DATA_DIR = BASE_DIR / "transfer_data"
+
     # BASE_DIR = Path.cwd()
 
     # Build the path to the data directory
@@ -130,6 +131,7 @@ def calculate_clubs_elo():
 
     # Import data
     dataframes = import_data_from_csv()
+    # print(dataframes)
     games_df = dataframes["games_df"]
     clubs_df = dataframes["clubs_df"]
     club_games_df = dataframes["club_games_df"]
@@ -153,8 +155,11 @@ def calculate_clubs_elo():
     # NOTE: Here we are using 1000, but better init. can be done like considering team market value
     # or level of league they are playing for etc
     clubs_df["elo"] = 1000
-    test_games_df = club_games_merged_df.head(1000)
+    # Ensure the 'elo' column is of type float
+    clubs_df["elo"] = clubs_df["elo"].astype(float)
+    test_games_df = club_games_merged_df.copy()
 
+    update_counter = 0
     for idx, row in test_games_df.iterrows():
         home_club_id = row["home_club_id"]
         away_club_id = row["away_club_id"]
@@ -172,4 +177,14 @@ def calculate_clubs_elo():
         clubs_df.loc[clubs_df["club_id"] == home_club_id, "elo"] = new_home_elo
         clubs_df.loc[clubs_df["club_id"] == away_club_id, "elo"] = new_away_elo
 
+        update_counter += 1
+
+    print(f"ELO was {update_counter} times updated")
+
+    clubs_df.to_csv("club_elos.csv")
     return clubs_df
+
+
+df = calculate_clubs_elo()
+print(df.head())
+print(df.tail())
