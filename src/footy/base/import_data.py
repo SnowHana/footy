@@ -2,33 +2,36 @@ import pandas as pd
 from django.conf import settings
 from django.utils.text import slugify
 from base.models import Player, PlayerStat, Club
+
 # from .clubs_elo_generator import calculate_clubs_elo
 import os
+
 
 def run():
     # import_standard_stats()
     # calculate_clubs_elo()
     print("ELO calculated!")
-    
+
+
 def import_club_elos():
-    csv_file_path = settings.BASE_DIR / 'data' / 'club_elos.csv'
-    
+    csv_file_path = settings.BASE_DIR / "data" / "club_elos.csv"
+
     try:
         df = pd.read_csv(csv_file_path)
-        
+
     except Exception as e:
         print("Error happend while reading csv files")
-    
-    
+
+
 def import_standard_stats():
     try:
-        
+
         # Read CSV file into a DataFrame
         csv_file_path = settings.BASE_DIR / "data" / "standard_stats_big5.csv"
         if not os.path.exists(csv_file_path):
             raise FileNotFoundError(f"{csv_file_path} doesn't exist!")
         df = pd.read_csv(csv_file_path)
-        
+
         # Read club ELO CSV file
         elo_csv_file_path = settings.BASE_DIR / "data" / "club_elos.csv"
         if not os.path.exists(elo_csv_file_path):
@@ -123,7 +126,10 @@ def import_standard_stats():
             club_name = row["Squad"]
             club_slug = slugify(club_name)
             club, created = Club.objects.update_or_create(
-                name=club_name, defaults={"slug": club_slug}
+                name=club_name,
+                defaults={
+                    "slug": club_slug,
+                },
             )
             if not created:
                 # Means we need to update
@@ -207,7 +213,9 @@ def import_standard_stats():
         PlayerStat.objects.bulk_create(player_stats_to_create)
         PlayerStat.objects.bulk_update(
             player_stats_to_update,
-            fields=[field.name for field in PlayerStat._meta.fields if field.name != "id"],
+            fields=[
+                field.name for field in PlayerStat._meta.fields if field.name != "id"
+            ],
         )
 
         print("Data import complete.")
