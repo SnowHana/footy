@@ -29,6 +29,9 @@ def fuzzy_merge(
     df_1["matches"] = df_1["matches"].apply(
         lambda x: ", ".join([i[0] for i in x if i[1] >= threshold])
     )
+
+    df_1 = df_1.set_index(list(df_1)[0])
+    df_1 = df_1.reset_index(drop=True)
     return df_1
 
 
@@ -59,9 +62,9 @@ for config in configurations:
 
     # Save the intermediate results for each iteration
     # Reset index
-    matched_df = matched_df.set_index(list(matched_df)[0])
-    matched_df = matched_df.reset_index(drop=True)
-    print(matched_df.columns)
+    # matched_df = matched_df.set_index(list(matched_df)[0])
+    # matched_df = matched_df.reset_index(drop=True)
+    # print(matched_df.columns)
     matched_df.to_csv(
         f"match_V{counter}.csv",
         index=True,
