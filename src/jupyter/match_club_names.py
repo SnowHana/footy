@@ -58,7 +58,14 @@ for config in configurations:
     )
 
     # Save the intermediate results for each iteration
-    matched_df.to_csv(f"match_V{counter}.csv", index=False)
+    # Reset index
+    matched_df = matched_df.set_index(list(matched_df)[0])
+    matched_df = matched_df.reset_index(drop=True)
+    print(matched_df.columns)
+    matched_df.to_csv(
+        f"match_V{counter}.csv",
+        index=True,
+    )
     counter += 1
 
     # Filter out matched rows
