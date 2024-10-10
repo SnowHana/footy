@@ -21,6 +21,20 @@ def players_all(request) -> HttpResponse:
     return render(request, "base/players_all.html", context)
 
 
+def club_profile(request, slug):
+    club = get_object_or_404(Club, slug=slug)
+
+    # Get fields
+    fields = [
+        (field.verbose_name, field.value_from_object(club))
+        for field in Club._meta.fields
+        if field.name not in ["id"]
+    ]
+
+    context = {"club": club, "fields": fields}
+    return render(request, "base/club_profile.html", context)
+
+
 def player_stats(request, slug):
     player_stats = get_object_or_404(
         PlayerStat,

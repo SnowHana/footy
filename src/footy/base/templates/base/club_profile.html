@@ -1,0 +1,60 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<style>
+    .player-stats-container {
+        display: grid;
+        grid-template-columns: 1fr 3fr;
+        gap: 20px;
+        /* Add space between the sections */
+    }
+
+    .feed-container {
+        grid-column: 1 / 2;
+        /* Will be used for the feed (currently placeholder) */
+    }
+
+    .club-table {
+        grid-column: 2 / 4;
+        /* Make it occupy the first column */
+    }
+</style>
+<div class="player-stats-container">
+
+
+    <!-- Feed (1/5th of width, placeholder for now) -->
+    <div class="feed-container">
+        <h2>Feed</h2>
+        <!-- Placeholder content, you can replace it with real content later -->
+        <p>Feed content goes here.</p>
+    </div>
+
+
+    <!-- Table (1/5th of width) -->
+    <div class="club-table">
+        <h1>{{ club.name }}</h1>
+
+        <h2>{{ player_stats.competition }} Stats</h2>
+
+        <table class='table' border="1">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field_name, field_value in fields %}
+                <tr>
+                    <td>{{ field_name }}</td>
+                    <td>{{ field_value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+</div>
+
+{% endblock content %}

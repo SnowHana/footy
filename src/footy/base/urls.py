@@ -9,4 +9,5 @@ urlpatterns = [
     path(
         "player-stats/<slug:slug>/graph/", views.generate_graph, name="generate_graph"
     ),
+    path("club-profile/<slug:slug>/", views.club_profile, name="club_profile"),
 ]
