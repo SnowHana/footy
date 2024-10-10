@@ -11,11 +11,13 @@ import plotly.graph_objs as go
 def home(request) -> HttpResponse:
     context = {}
     # return render(request, "base/home.html", context)
-    return HttpResponse("HELLO")
+    return render(request, "base/home.html", context)
 
 
 def players_all(request) -> HttpResponse:
+
     players = Player.objects.all()[:50]
+
     context = {"players": players}
 
     return render(request, "base/players_all.html", context)
