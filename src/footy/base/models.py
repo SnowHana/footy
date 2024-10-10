@@ -14,6 +14,8 @@ class Club(models.Model):
     total_market_value = models.DecimalField(
         max_digits=20, decimal_places=2, blank=True, null=True, default=1000
     )
+    # Store alternative names
+    other_names = models.JSONField(blank=True, null=True, default=None)
 
     # elo =
     def __str__(self):
@@ -26,6 +28,13 @@ class Club(models.Model):
 
     def get_absolute_url(self):
         return reverse("club_detail", args=[self.slug])
+
+    def get_all_names(self):
+        """Return a list of all possible names of a club, ie) FC Barcelona, Futbol Clube de Barcelona etc..."""
+        if self.other_names:
+            return [self.name] + self.other_names
+        else:
+            return [self.name]
 
 
 class Player(models.Model):
