@@ -33,7 +33,7 @@ def import_standard_stats():
         df = pd.read_csv(csv_file_path)
 
         # Read club ELO CSV file
-        elo_csv_file_path = settings.BASE_DIR / "data" / "club_elos.csv"
+        elo_csv_file_path = settings.BASE_DIR / "data" / "clubelos_transfermrkt.csv"
         if not os.path.exists(elo_csv_file_path):
             # TODO: Add fn that scrapes data.
             raise FileNotFoundError(f"{elo_csv_file_path} doesn't exist!")
