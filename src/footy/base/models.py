@@ -7,6 +7,9 @@ class Club(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=255, unique=True)
     club_code = models.CharField(max_length=100, default="CR7")
+    country = models.CharFiled(max_length=100, blank=True, null=True, default=None)
+    level = models.PositiveIntegerField(blank=True, null=True, default=None)
+
     # domestic_competition_id = models.
     elo = models.FloatField(default=1000)
     squad_size = models.PositiveIntegerField(blank=True, null=True, default=1000)
