@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
-from .models import Player, Team, PlayerStat
+from .models import Player, Club, PlayerStat
 from django.db.models import Avg
 import plotly.graph_objs as go
 
@@ -11,14 +11,36 @@ import plotly.graph_objs as go
 def home(request) -> HttpResponse:
     context = {}
     # return render(request, "base/home.html", context)
-    return HttpResponse("HELLO")
+    return render(request, "base/home.html", context)
 
 
 def players_all(request) -> HttpResponse:
+
     players = Player.objects.all()[:50]
+
     context = {"players": players}
 
-    return render(request, "base/players_all.html", context)
+    # clubs = Club.objects.all().filter()
+
+    return render(
+        request,
+        "base/players_all.html",
+        context,
+    )
+
+
+def club_profile(request, slug):
+    club = get_object_or_404(Club, slug=slug)
+
+    # Get fields
+    fields = [
+        (field.verbose_name, field.value_from_object(club))
+        for field in Club._meta.fields
+        if field.name not in ["id"]
+    ]
+
+    context = {"club": club, "fields": fields}
+    return render(request, "base/club_profile.html", context)
 
 
 def player_stats(request, slug):

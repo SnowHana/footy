@@ -3,10 +3,21 @@ from django.utils.text import slugify
 from django.urls import reverse
 
 
-class Team(models.Model):
+class Club(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=255, unique=True)
+    club_code = models.CharField(max_length=100, default="CR7")
+    # domestic_competition_id = models.
+    elo = models.FloatField(default=1000)
+    squad_size = models.PositiveIntegerField(blank=True, null=True, default=1000)
+    avg_age = models.PositiveIntegerField(blank=True, null=True, default=1000)
+    total_market_value = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True, default=1000
+    )
+    # Store alternative names
+    other_names = models.JSONField(blank=True, null=True, default=None)
 
+    # elo =
     def __str__(self):
         return self.name
 
@@ -16,7 +27,14 @@ class Team(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse("team_detail", args=[self.slug])
+        return reverse("club_detail", args=[self.slug])
+
+    def get_all_names(self):
+        """Return a list of all possible names of a club, ie) FC Barcelona, Futbol Clube de Barcelona etc..."""
+        if self.other_names:
+            return [self.name] + self.other_names
+        else:
+            return [self.name]
 
 
 class Player(models.Model):
@@ -26,10 +44,10 @@ class Player(models.Model):
     born = models.IntegerField()
     nation = models.CharField(max_length=100)
     position = models.CharField(max_length=10)
-    team = models.ForeignKey(Team, related_name="player", on_delete=models.CASCADE)
+    club = models.ForeignKey(Club, related_name="player", on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"{self.name} : {self.team}"
+        return f"{self.name} : {self.club}"
 
     def save(self, *args, **kwargs):
         if not self.slug:
