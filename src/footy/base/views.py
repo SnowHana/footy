@@ -20,7 +20,13 @@ def players_all(request) -> HttpResponse:
 
     context = {"players": players}
 
-    return render(request, "base/players_all.html", context)
+    # clubs = Club.objects.all().filter()
+
+    return render(
+        request,
+        "base/players_all.html",
+        context,
+    )
 
 
 def club_profile(request, slug):
