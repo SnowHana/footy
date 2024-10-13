@@ -120,6 +120,38 @@ def import_standard_stats():
         # Helper dictionaries for lookup
         player_lookup = {}
 
+        for index, row in elo_df.iterrows():
+            # Handle club
+            club_name = row["Squad"]
+            club_slug = slugify(club_name)
+            club, created = Club.objects.update_or_create(
+                name=club_name,
+                defaults={"slug": club_slug},
+            )
+            if not created:
+                # Means we need to update
+                clubs_to_update_or_create.append(club)
+
+            # Handle Player
+            player_name = row["Player"]
+            player_slug = slugify(f"{player_name}-{club.name}")
+            player, created = Player.objects.update_or_create(
+                slug=player_slug,
+                defaults={
+                    "name": player_name,
+                    "age": row["Age"],
+                    "born": row["Born"],
+                    "nation": row["Nation"],
+                    "position": row["Pos"],
+                    "club": club,
+                },
+            )
+            if created:
+                players_to_update_or_create.append(player)
+            else:
+                # Alr exists
+                players_to_update.append(player)
+
         # Iterate through the DataFrame
         for index, row in df.iterrows():
             # Handle club
@@ -127,9 +159,7 @@ def import_standard_stats():
             club_slug = slugify(club_name)
             club, created = Club.objects.update_or_create(
                 name=club_name,
-                defaults={
-                    "slug": club_slug,
-                },
+                defaults={"slug": club_slug},
             )
             if not created:
                 # Means we need to update
