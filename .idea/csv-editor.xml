@@ -3,7 +3,7 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="/clubs.csv">
+        <entry key="/src/transfer_data/club_elo_2024-09-21.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -53,6 +53,13 @@
           </value>
         </entry>
         <entry key="/src/transfer_data/players.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="/src/transfer_data/standard_stats_big5.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
