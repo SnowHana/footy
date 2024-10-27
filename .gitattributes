@@ -1,0 +1,10 @@
+src/data/transfer_data/competitions.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/game_lineups.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/player_valuations.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/players.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/clubs.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/club_games.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/game_events.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/games.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/transfers.csv filter=lfs diff=lfs merge=lfs -text
+src/data/transfer_data/appearances.csv filter=lfs diff=lfs merge=lfs -text
