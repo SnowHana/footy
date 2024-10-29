@@ -30,78 +30,118 @@ def init_players_elo_df(players_df: pd.DataFrame, player_valuations_df: pd.DataF
     return players_elo_df
 
 
+# def is_enough_data_to_init_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame,
+#                                player_id, game_id):
+#     """
+#     Decide if we should use
+#     1. Squad's avg elo
+#     2. Player's market value of that time
+#     to init. player's elo
+#     Assume. Player's elo should be initialised.
+#     @param games_df:
+#     @param player_id:
+#     @param game_id:
+#     @param season:
+#     @return:
+#     """
+#     teammates = appearances_df.loc[(appearances_df['game_id'] == game_id) & (appearances_df['player_id'] != player_id)]
+#     # This might go wrong?
+#     season = games_df.loc[games_df['game_id'] == game_id, 'season'].iloc[0]
+#     if teammates.empty:
+#         # No teammate at all, so probs just use mrkt value
+#         return None
+#     else:
+#         # Teammate exists. More than half's elo exists?
+#         res = []
+#
+#         for player_id in teammates['player_id']:
+#             elo = players_elo_df.loc[(players_elo_df['player_id'] == player_id) & (players_elo_df['season'] == season)]
+#             if elo is not None:
+#                 res.append(elo)
+#
+#         if len(res) >= len(teammates) / 2:
+#             # More than half of teammates' elo exists, so we just avg them
+#             return None
+#         else:
+#             return sum(res) / len(res)
+#
+
 def is_enough_data_to_init_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame,
                                player_id, game_id):
     """
     Decide if we should use
-    1. Squad's avg elo
+    1. Squad's average ELO
     2. Player's market value of that time
-    to init. player's elo
-    Assume. Player's elo should be initialised.
-    @param games_df:
-    @param player_id:
-    @param game_id:
-    @param season:
-    @return:
+    to initialize the player's ELO.
+    Assumes the player's ELO needs initialization.
     """
+    # Retrieve teammates (excluding the player themselves)
     teammates = appearances_df.loc[(appearances_df['game_id'] == game_id) & (appearances_df['player_id'] != player_id)]
-    # This might go wrong?
+
+    # Get the season of the game
+    if game_id not in games_df['game_id'].values:
+        return None  # Return None if the game_id is invalid
+
     season = games_df.loc[games_df['game_id'] == game_id, 'season'].iloc[0]
+
     if teammates.empty:
-        # No teammate at all, so probs just use mrkt value
+        # No teammates found, use player's market value for initialization
         return None
     else:
-        # Teammate exists. More than half's elo exists?
-        res = []
+        # Pre-filter players_elo_df for teammates in the given season
+        teammate_ids = teammates['player_id'].unique()
+        teammate_elo_df = players_elo_df[(players_elo_df['player_id'].isin(teammate_ids)) &
+                                         (players_elo_df['season'] == season)]
 
-        for player_id in teammates['player_id']:
-            elo = players_elo_df.loc[(players_elo_df['player_id'] == player_id) & (players_elo_df['season'] == season)]
-            if elo is not None:
-                res.append(elo)
+        # Drop rows without an ELO to handle missing values
+        teammate_elos = teammate_elo_df['elo'].dropna()
 
-        if len(res) >= len(teammates) / 2:
-            # More than half of teammates' elo exists, so we just avg them
-            return None
+        # Check if enough ELO data exists
+        if len(teammate_elos) >= len(teammate_ids) / 2:
+            # More than half of teammates have ELOs, so return their average
+            return teammate_elos.mean()
         else:
-            return sum(res) / len(res)
+            # Not enough data, use market value instead
+            return None
 
 
 def init_player_elo_with_player_value(player_valuations_df: pd.DataFrame, players_elo_df: pd.DataFrame, player_id,
-                                      season, base_elo=BASE_ELO, elo_range=ELO_RANGE):
+                                      season, base_elo=BASE_ELO, elo_range=ELO_RANGE, z_cap=3):
     """
-    Init. player's elo based on a player value of that time.
-    Assume: His teammates didn't have much data as well...
-    @param player_id:
-    @param season:
+    Initialize a player's ELO based on their market value for a given season.
+    @param players_elo_df:
+    @param player_valuations_df:
+    @param player_id: The ID of the player.
+    @param season: The season to calculate the ELO for.
     """
-    player_value = player_valuations_df.loc[(player_valuations_df['player_id'] == player_id) \
-                                            & (player_valuations_df['season'] == season)]
+    # TODO: Later, to optimize, we can do sth like calculate z-score of all players by season
+    # So that we don't have to repeat the process?
+    # Get the player's market value for the specific season
+    player_value = player_valuations_df.loc[(player_valuations_df['player_id'] == player_id) &
+                                            (player_valuations_df['season'] == season), 'market_value_in_eur']
 
     if player_value.empty:
-        # So we have no value of that player at that season..
-        # TODO: Better value for very first initialisation
-        return 1500
+        # No market value available for this player in the given season, returning a base ELO
+        return base_elo
     else:
-        season_df = player_valuations_df[player_valuations_df['season'] == season].copy()
-        # Normalise
-        # Check if we have enough data to calculate mean and std
-        if len(season_df['market_value'].dropna()) > 1:
-            # Calculate z-scores for market values
-            season_df['market_value_z'] = zscore(season_df['market_value'].fillna(season_df['market_value'].mean()))
+        # Get market values for all players in the season to normalize
+        season_values = player_valuations_df.loc[player_valuations_df['season'] == season, 'market_value_in_eur'].dropna()
+
+        # Check if there are enough values to calculate z-scores
+        if len(season_values) > 1:
+            # Calculate the z-score for the player's market value
+            player_z_score = (player_value.values[0] - season_values.mean()) / season_values.std()
+            # NOTE: Cap the z-score to prevent maximum ELOs
+            # TODO: Think of better approach
+            # e.g.) Ronaldo in 2015 gives ELO of 4800, Messi in 2012 gives ELO of 5400, which is not ideal
+            # This doens't really work as well...
+            player_z_score = max(min(player_z_score, z_cap), -z_cap)
         else:
-            season_df['market_value_z'] = 0  # Default to zero if only one player or no valid market values
+            player_z_score = 0  # Default z-score if not enough data is available
 
-        # Map z-scores to ELO
-        season_df['elo'] = base_elo + (season_df['market_value_z'] * (elo_range / 2))
-
-        # Handle cases with missing market value (assign base ELO or another strategy)
-        season_df['elo'].fillna(base_elo, inplace=True)
-
-        # Merge back to main DataFrame
-        players_elo_df = players_elo_df.merge(season_df[['player_id', 'season', 'elo']], on=['player_id', 'season'],
-                                              how='left')
-
-        return players_elo_df
+        # Calculate the player's ELO based on their z-score
+        player_elo = base_elo + (player_z_score * (elo_range / 2))
+        return player_elo
 
 
 def init_player_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame, player_id,
@@ -242,17 +282,20 @@ def main():
     players_elo_df = init_players_elo_df(players_df, player_valuations_df)
 
     # Now Testing
-    ronaldo = players_df.loc[players_df['name'].str.contains('Cristiano Ronaldo')]
+    ronaldo = players_df.loc[players_df['name'].str.contains('Lionel Messi')]
     ronaldo_id = ronaldo['player_id'].values[0]
     ronaldo_games = appearances_df.loc[appearances_df['player_id'] == ronaldo_id]
-    print(ronaldo)
-    print(ronaldo_games)
-    res = is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, ronaldo_id, ronaldo_games['game_id'].values[0])
+    # print(ronaldo)
+    # print(ronaldo_games)
+    res = is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, ronaldo_id,
+                                     ronaldo_games['game_id'].values[0])
     # print(res)
     if res is None:
         print("Not enough data of teammates to init ronlaod's elo based on them!")
     else:
         print("We have enough data???")
+
+    init_player_elo_with_player_value(player_valuations_df, players_elo_df, ronaldo_id, '2012')
     print("DONE")
     #
     # sample_df = appearances_df.head(10)
