@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 BASE_ELO = 1500
 ELO_RANGE = 300
@@ -36,6 +37,9 @@ class PlayerEloInitializer:
                 file_key = f"{filename.split('.')[0]}_df"
                 filepath = os.path.join(dirpath, filename)
                 dataframes[file_key] = pd.read_csv(filepath, sep=",", encoding="UTF-8")
+                # Convert season column to integer if they exist
+                # if 'season' in dataframes[file_key].columns:
+                #     dataframes[file_key]['season'] = dataframes[file_key]['season'].astype(int)
                 print(f"{file_key}: {dataframes[file_key].shape}")
         print("Data imported successfully.")
         return dataframes
@@ -83,6 +87,7 @@ class PlayerEloInitializer:
             df_copy['season'] = df_copy['date'].apply(
                 lambda x: f"{x.year}" if x >= pd.Timestamp(x.year, 7, 1) else f"{x.year - 1}"
             )
+            df_copy['season'] = df_copy['season'].astype(int)
         return df_copy
 
     def _init_season_valuations(self):
@@ -155,10 +160,22 @@ class PlayerEloInitializer:
                     self.init_player_elo_with_value(player_id, season)
 
         print(f"ELO Value: {elo_value} for player {player_id}")
-        self.players_elo_df.loc[
-            (self.players_elo_df['player_id'] == player_id) &
-            (self.players_elo_df['season'] == season), 'elo'
-        ] = elo_value
+        # Check matching row exists
+        row_exists = ((self.players_elo_df['player_id'] == player_id) &
+                      (self.players_elo_df['season'] == season)).any()
+        if not row_exists:
+            raise ValueError(f'No result found for player {player_id} in season {season} in player elos file')
+        else:
+            print("Matching row found")
+            self.players_elo_df.loc[
+                (self.players_elo_df['player_id'] == player_id) &
+                (self.players_elo_df['season'] == season), 'elo'
+            ] = elo_value
+        # Confirm update by printing relevant rows
+        print("Updated DataFrame rows:\n",
+              self.players_elo_df[(self.players_elo_df['player_id'] == player_id) &
+                                  (self.players_elo_df['season'] == season)])
+
         return self.players_elo_df
 
     def init_all_players_elo(self):
@@ -176,7 +193,8 @@ class PlayerEloInitializer:
 
     def _get_season(self, game_id):
         """Retrieve season for a given game_id."""
-        return self.games_df.loc[self.games_df['game_id'] == game_id, 'season'].iloc[0]
+        season = self.games_df.loc[self.games_df['game_id'] == game_id, 'season'].iloc[0]
+        return int(season)
 
     def _get_teammates(self, player_id, game_id):
         """Retrieve teammates for a player in a specific game."""
