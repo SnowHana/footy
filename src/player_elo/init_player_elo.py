@@ -87,7 +87,7 @@ class PlayerEloInitializer:
             df_copy['season'] = df_copy['date'].apply(
                 lambda x: f"{x.year}" if x >= pd.Timestamp(x.year, 7, 1) else f"{x.year - 1}"
             )
-            df_copy['season'] = df_copy['season'].astype(int)
+            df_copy['season'] = df_copy['season'].astype(str)
         return df_copy
 
     def _init_season_valuations(self):
@@ -194,7 +194,7 @@ class PlayerEloInitializer:
     def _get_season(self, game_id):
         """Retrieve season for a given game_id."""
         season = self.games_df.loc[self.games_df['game_id'] == game_id, 'season'].iloc[0]
-        return int(season)
+        return str(season)
 
     def _get_teammates(self, player_id, game_id):
         """Retrieve teammates for a player in a specific game."""
