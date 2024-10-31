@@ -1,9 +1,10 @@
+import numpy as np
 import pandas as pd
 from scipy.stats import zscore
 from utils import *
 
 BASE_ELO = 1500
-ELO_RANGE = 300
+ELO_RANGE = 1000
 
 
 # Create new df
@@ -106,7 +107,7 @@ def is_enough_data_to_init_elo(appearances_df: pd.DataFrame, games_df: pd.DataFr
 
 
 def init_player_elo_with_player_value(player_valuations_df: pd.DataFrame, players_elo_df: pd.DataFrame, player_id,
-                                      season, base_elo=BASE_ELO, elo_range=ELO_RANGE, z_cap=3):
+                                      season, base_elo=BASE_ELO, elo_range=ELO_RANGE, season_valuations=None):
     """
     Initialize a player's ELO based on their market value for a given season.
     @param players_elo_df:
@@ -117,35 +118,45 @@ def init_player_elo_with_player_value(player_valuations_df: pd.DataFrame, player
     # TODO: Later, to optimize, we can do sth like calculate z-score of all players by season
     # So that we don't have to repeat the process?
     # Get the player's market value for the specific season
+    if season_valuations is None or season not in season_valuations:
+        return base_elo  # handle cases where season stats are unavailable
+    season_mean = season_valuations[season]['mean']
+    season_std = season_valuations[season]['std']
+
     player_value = player_valuations_df.loc[(player_valuations_df['player_id'] == player_id) &
                                             (player_valuations_df['season'] == season), 'market_value_in_eur']
 
     if player_value.empty:
         # No market value available for this player in the given season, returning a base ELO
+        print('No player market value found, returning a base ELO')
         return base_elo
     else:
         # Get market values for all players in the season to normalize
-        season_values = player_valuations_df.loc[player_valuations_df['season'] == season, 'market_value_in_eur'].dropna()
+        # season_values = player_valuations_df.loc[
+        #     player_valuations_df['season'] == season, 'market_value_in_eur'].dropna()
+        # season_values_log = np.log1p(season_values)  # Log transformation
 
-        # Check if there are enough values to calculate z-scores
-        if len(season_values) > 1:
-            # Calculate the z-score for the player's market value
-            player_z_score = (player_value.values[0] - season_values.mean()) / season_values.std()
-            # NOTE: Cap the z-score to prevent maximum ELOs
-            # TODO: Think of better approach
-            # e.g.) Ronaldo in 2015 gives ELO of 4800, Messi in 2012 gives ELO of 5400, which is not ideal
-            # This doens't really work as well...
-            player_z_score = max(min(player_z_score, z_cap), -z_cap)
-        else:
-            player_z_score = 0  # Default z-score if not enough data is available
+        # Calculate the z-score for the player's market value
+        # print(f"Market Value of player: {player_value.values[0]}")
+        # print(f"Avg market value of players: {season_mean}")
+        # print(f"Std dev. of players: {season_std}")
+
+        # Calculate z-scores and cap them to prevent extreme ELOs
+        # Compute the z-score using precomputed season stats
+        player_z_score = (np.log1p(player_value.values[0]) - season_mean) / season_std
+        # NOTE: Cap the z-score to prevent maximum ELOs
+        # TODO: Think of better approach
+        # e.g.) Ronaldo in 2015 gives ELO of 4800, Messi in 2012 gives ELO of 5400, which is not ideal
+        # This doens't really work as well...
 
         # Calculate the player's ELO based on their z-score
         player_elo = base_elo + (player_z_score * (elo_range / 2))
+        print(f"Player ELO: {player_elo}")
         return player_elo
 
 
 def init_player_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame, player_id,
-                    game_id):
+                    game_id, season_valuations):
     """
     Init player's elo of player id, at game_id
     @param player_id:
@@ -161,13 +172,15 @@ def init_player_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, player
     club = player_appearance['player_club_id']
 
     # 2. and check if we have enough elo data of that club
-    elo_value = is_enough_data_to_init_elo(player_id, game_id)
+    elo_value = is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, player_id, game_id)
     # season = games_df.loc[games_df['game_id'] == game_id]['season']
     season = games_df.loc[games_df['game_id'] == game_id, 'season'].iloc[0]
     if elo_value is None:
         # We need to manually calculate elo_value based on his market value of taht time
         # print(season)
-        elo_value = init_player_elo_with_player_value(player_id, season)
+        print("Init with player market value")
+        elo_value = init_player_elo_with_player_value(player_valuations_df, players_elo_df, player_id, season,
+                                                      season_valuations=season_valuations)
 
     print(f"Elo value {elo_value} for player {player_id}")
     # 3. Now set player elo of that time
@@ -208,6 +221,37 @@ def get_player_elo(players_df: pd.DataFrame, player_id, game_id):
 def test_is_enough_data(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame,
                         player_id, game_id):
     print(is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, player_id, game_id))
+
+
+def test_init_player_elo_with_market_value():
+    # Now Testing
+    sample_player_names = {'Lionel Messi': '2015', 'Ronaldo': '2015', 'Federico Valverde': '2020', 'Eric Dier': '2015', \
+                           'Nacho Fernández': '2020'}
+    # seasons = ['2015', '2015', '2020', '2020', '2020']
+    # ronaldo = players_df.loc[players_df['name'].str.contains('Lionel Messi')]
+    ronaldo = players_df.loc[players_df['name'].str.contains('Ronaldo')]
+    # ronaldo = players_df.loc[players_df['name'].str.contains('Federico Valverde')]
+    # ronaldo = players_df.loc[players_df['name'].str.contains('Eric Dier')]
+    # ronaldo = players_df.loc[players_df['name'].str.contains('Nacho Fernández')]
+    # season = '2020'
+    season = '2015'
+    ronaldo_id = ronaldo['player_id'].values[0]
+    ronaldo_games = appearances_df.loc[appearances_df['player_id'] == ronaldo_id]
+    print(ronaldo)
+    # print(ronaldo_games)
+    # res = is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, ronaldo_id,
+    #                                  ronaldo_games['game_id'].values[0])
+    # if res is None:
+    #     print("Not enough data of teammates to init ronlaod's elo based on them!")
+    # else:
+    #     print("We have enough data???")
+    for player_name, season in sample_player_names.items():
+        player = players_df.loc[players_df['name'].str.contains(player_name)]
+        player_id = player['player_id'].values[0]
+        ronaldo_games = appearances_df.loc[appearances_df['player_id'] == player_id]
+        print(f"Player {player['name'].values[0]} info.")
+        init_player_elo_with_player_value(player_valuations_df, players_elo_df, player_id, season \
+                                          , season_valuations=season_valuations)
 
 
 def main():
@@ -280,22 +324,23 @@ def main():
     player_valuations_df = add_season_column(player_valuations_df)
 
     players_elo_df = init_players_elo_df(players_df, player_valuations_df)
+    # Calculate season_valuations
+    season_valuations = {}
+    for season in player_valuations_df['season'].unique():
+        season_values = player_valuations_df.loc[
+            player_valuations_df['season'] == season, 'market_value_in_eur'].dropna()
+        season_values_log = np.log1p(season_values)
+        season_valuations[season] = {
+            'mean': season_values_log.mean(),
+            'std': season_values_log.std()
+        }
 
-    # Now Testing
-    ronaldo = players_df.loc[players_df['name'].str.contains('Lionel Messi')]
-    ronaldo_id = ronaldo['player_id'].values[0]
-    ronaldo_games = appearances_df.loc[appearances_df['player_id'] == ronaldo_id]
-    # print(ronaldo)
-    # print(ronaldo_games)
-    res = is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, ronaldo_id,
-                                     ronaldo_games['game_id'].values[0])
-    # print(res)
-    if res is None:
-        print("Not enough data of teammates to init ronlaod's elo based on them!")
-    else:
-        print("We have enough data???")
+    for index, row in appearances_df.sample(n=10).iterrows():
+        player_id = row['player_id']
+        game_id = row['game_id']
+        init_player_elo(appearances_df, games_df, players_elo_df, player_id, game_id, season_valuations)
 
-    init_player_elo_with_player_value(player_valuations_df, players_elo_df, ronaldo_id, '2012')
+        print("##############################")
     print("DONE")
     #
     # sample_df = appearances_df.head(10)
