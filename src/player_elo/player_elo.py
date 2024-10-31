@@ -31,42 +31,6 @@ def init_players_elo_df(players_df: pd.DataFrame, player_valuations_df: pd.DataF
     return players_elo_df
 
 
-# def is_enough_data_to_init_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame,
-#                                player_id, game_id):
-#     """
-#     Decide if we should use
-#     1. Squad's avg elo
-#     2. Player's market value of that time
-#     to init. player's elo
-#     Assume. Player's elo should be initialised.
-#     @param games_df:
-#     @param player_id:
-#     @param game_id:
-#     @param season:
-#     @return:
-#     """
-#     teammates = appearances_df.loc[(appearances_df['game_id'] == game_id) & (appearances_df['player_id'] != player_id)]
-#     # This might go wrong?
-#     season = games_df.loc[games_df['game_id'] == game_id, 'season'].iloc[0]
-#     if teammates.empty:
-#         # No teammate at all, so probs just use mrkt value
-#         return None
-#     else:
-#         # Teammate exists. More than half's elo exists?
-#         res = []
-#
-#         for player_id in teammates['player_id']:
-#             elo = players_elo_df.loc[(players_elo_df['player_id'] == player_id) & (players_elo_df['season'] == season)]
-#             if elo is not None:
-#                 res.append(elo)
-#
-#         if len(res) >= len(teammates) / 2:
-#             # More than half of teammates' elo exists, so we just avg them
-#             return None
-#         else:
-#             return sum(res) / len(res)
-#
-
 def is_enough_data_to_init_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame,
                                player_id, game_id):
     """
