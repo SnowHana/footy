@@ -159,32 +159,32 @@ class PlayerEloInitializer:
         elo_value = self.is_enough_data_to_init_elo(player_id, game_id) or \
                     self.init_player_elo_with_value(player_id, season)
 
-        print(f"ELO Value: {elo_value} for player {player_id}")
+        # print(f"ELO Value: {elo_value} for player {player_id}")
         # Check matching row exists
         row_exists = ((self.players_elo_df['player_id'] == player_id) &
                       (self.players_elo_df['season'] == season)).any()
         if not row_exists:
             raise ValueError(f'No result found for player {player_id} in season {season} in player elos file')
         else:
-            print("Matching row found")
+            # print("Matching row found")
             self.players_elo_df.loc[
                 (self.players_elo_df['player_id'] == player_id) &
                 (self.players_elo_df['season'] == season), 'elo'
             ] = elo_value
         # Confirm update by printing relevant rows
-        print("Updated DataFrame rows:\n",
-              self.players_elo_df[(self.players_elo_df['player_id'] == player_id) &
-                                  (self.players_elo_df['season'] == season)])
+        # print("Updated DataFrame rows:\n",
+        #       self.players_elo_df[(self.players_elo_df['player_id'] == player_id) &
+        #                           (self.players_elo_df['season'] == season)])
 
         return self.players_elo_df
 
     def init_all_players_elo(self):
         """Initialize ELOs for a sample of players."""
-        for index, row in self.appearances_df.sample(n=5).iterrows():
+        for index, row in self.appearances_df.iterrows():
             player_id = row['player_id']
             game_id = row['game_id']
             self.players_elo_df = self.init_player_elo(player_id, game_id)
-            print("########################################")
+            # print("########################################")
 
         # lastly save it as a csv file
         data_path = os.path.join(self.data_dir, 'players_elo.csv')
