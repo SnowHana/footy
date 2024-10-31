@@ -119,10 +119,16 @@ def init_player_elo_with_player_value(player_valuations_df: pd.DataFrame, player
     # So that we don't have to repeat the process?
     # Get the player's market value for the specific season
     if season_valuations is None or season not in season_valuations:
+        print("Season Valuation not valid, or not in a season")
+        print(season_valuations)
+        print(season)
         return base_elo  # handle cases where season stats are unavailable
     season_mean = season_valuations[season]['mean']
     season_std = season_valuations[season]['std']
+    # Convert season in the dataframe to the same type as the variable `season`
+    player_valuations_df['season'] = player_valuations_df['season'].astype(type(season))
 
+    # Now perform the query
     player_value = player_valuations_df.loc[(player_valuations_df['player_id'] == player_id) &
                                             (player_valuations_df['season'] == season), 'market_value_in_eur']
 
@@ -330,6 +336,7 @@ def main():
         season_values = player_valuations_df.loc[
             player_valuations_df['season'] == season, 'market_value_in_eur'].dropna()
         season_values_log = np.log1p(season_values)
+        season = np.int64(season)
         season_valuations[season] = {
             'mean': season_values_log.mean(),
             'std': season_values_log.std()
