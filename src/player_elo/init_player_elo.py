@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-
+import time
 import numpy as np
 import pandas as pd
 
@@ -53,6 +53,9 @@ class PlayerEloInitializer:
             player_val_df_with_season.groupby(['player_id', 'season'])['date'].idxmin()
         ]
         df = df.merge(df_sorted[['player_id', 'season']], on='player_id', how='left')
+        # Now, we add missing seasons.
+        # ie) There are cases where ther3 is a gap in the data (ie. 2011, 2012, 2014, 2017)
+
         # df = df.drop(df.columns.difference(['player_id', 'season', 'first_name', 'last_name', 'name',
         #                                     'current_club_id', 'player_code', 'country_of_birth',
         #                                     'market_value_in_eur', 'date_of_birth']), axis=1, inplace=)
@@ -61,22 +64,21 @@ class PlayerEloInitializer:
         # print("Columns after merge:", df.columns.tolist())
         #
         # # Select only the specified columns
-        # expected_columns = [
-        #     'player_id', 'season', 'first_name', 'last_name', 'name',
-        #     'current_club_id', 'player_code', 'country_of_birth',
-        #     'market_value_in_eur', 'date_of_birth' , 'elo'
-        # ]
+        expected_columns = [
+            'player_id', 'season', 'first_name', 'last_name', 'name', 'player_code',
+            'country_of_birth', 'date_of_birth', 'elo'
+        ]
         #
         # # Filter by expected columns only if they exist in df
-        # existing_columns = [col for col in expected_columns if col in df.columns]
+        existing_columns = [col for col in expected_columns if col in df.columns]
         #
         # # Display missing columns for debugging, if any
-        # missing_columns = set(expected_columns) - set(existing_columns)
-        # if missing_columns:
-        #     print("Warning: Missing columns in df:", missing_columns)
+        missing_columns = set(expected_columns) - set(existing_columns)
+        if missing_columns:
+            print("Warning: Missing columns in df:", missing_columns)
         #
-        # return df[existing_columns]
-        return df
+        return df[existing_columns]
+        # return df
 
     @staticmethod
     def _add_season_column(df: pd.DataFrame) -> pd.DataFrame:
@@ -87,7 +89,8 @@ class PlayerEloInitializer:
             df_copy['season'] = df_copy['date'].apply(
                 lambda x: f"{x.year}" if x >= pd.Timestamp(x.year, 7, 1) else f"{x.year - 1}"
             )
-            df_copy['season'] = df_copy['season'].astype(str)
+            # Set data type accordingly
+            df_copy['season'] = np.int64(df_copy['season'])
         return df_copy
 
     def _init_season_valuations(self):
@@ -96,7 +99,7 @@ class PlayerEloInitializer:
 
         # Ensure consistent 'season' column type in player_valuations_df
         self.player_valuations_df = self._add_season_column(self.player_valuations_df)
-        self.player_valuations_df['season'] = self.player_valuations_df['season'].astype(str)
+        self.player_valuations_df['season'] = np.int64(self.player_valuations_df['season'])
 
         for season in self.player_valuations_df['season'].unique():
             season_values = self.player_valuations_df.loc[
@@ -129,7 +132,7 @@ class PlayerEloInitializer:
 
     def init_player_elo_with_value(self, player_id, season):
         """Initialize a player's ELO based on their market value for a given season."""
-        season = str(season)  # Ensure consistent season type for dictionary lookup
+        season = np.int64(season)  # Ensure consistent season type for dictionary lookup
         if season not in self.season_valuations:
             return self.base_elo
 
@@ -164,7 +167,17 @@ class PlayerEloInitializer:
         row_exists = ((self.players_elo_df['player_id'] == player_id) &
                       (self.players_elo_df['season'] == season)).any()
         if not row_exists:
-            raise ValueError(f'No result found for player {player_id} in season {season} in player elos file')
+            # Copy first occurence
+            existing_row = self.players_elo_df[self.players_elo_df['player_id'] == player_id].iloc[0].copy()
+            existing_row['season'] = season
+            existing_row['elo'] = elo_value
+
+            # Append the new row to the DataFrame
+            self.players_elo_df = pd.concat([self.players_elo_df, pd.DataFrame([existing_row])], ignore_index=True)
+
+
+            # This is the case where there is a missing season
+            # raise ValueError(f'No result found for player {player_id} in season {season} in player elos file')
         else:
             # print("Matching row found")
             self.players_elo_df.loc[
@@ -178,14 +191,28 @@ class PlayerEloInitializer:
 
         return self.players_elo_df
 
+    # def fill_missing_season_elo(self, player_id, season):
+
     def init_all_players_elo(self):
         """Initialize ELOs for a sample of players."""
-        for index, row in self.appearances_df.iterrows():
-            player_id = row['player_id']
-            game_id = row['game_id']
-            self.players_elo_df = self.init_player_elo(player_id, game_id)
-            # print("########################################")
 
+        # for index, row in self.appearances_df.iterrows():
+        #     player_id = row['player_id']
+        #     game_id = row['game_id']
+        #     self.players_elo_df = self.init_player_elo(player_id, game_id)
+        #     # print("########################################")
+        start_time = time.time()
+        for index, row in enumerate(self.appearances_df.itertuples(), start=1):
+            player_id = row.player_id
+            game_id = row.game_id
+            self.players_elo_df = self.init_player_elo(player_id, game_id)
+
+            # Print a message every 100 and 1000 iterations
+            if index % 10000 == 0:
+                print(f"Processed {index} players- ({time.time() - start_time})")
+
+        # Lastly sort it.
+        self.players_elo_df = self.players_elo_df.sort_values(by=['player_id', 'season']).reset_index(drop=True)
         # lastly save it as a csv file
         data_path = os.path.join(self.data_dir, 'players_elo.csv')
         self.players_elo_df.to_csv(data_path, index=True)
@@ -194,7 +221,7 @@ class PlayerEloInitializer:
     def _get_season(self, game_id):
         """Retrieve season for a given game_id."""
         season = self.games_df.loc[self.games_df['game_id'] == game_id, 'season'].iloc[0]
-        return str(season)
+        return np.int64(season)
 
     def _get_teammates(self, player_id, game_id):
         """Retrieve teammates for a player in a specific game."""
