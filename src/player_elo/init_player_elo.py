@@ -175,7 +175,6 @@ class PlayerEloInitializer:
             # Append the new row to the DataFrame
             self.players_elo_df = pd.concat([self.players_elo_df, pd.DataFrame([existing_row])], ignore_index=True)
 
-
             # This is the case where there is a missing season
             # raise ValueError(f'No result found for player {player_id} in season {season} in player elos file')
         else:
@@ -192,6 +191,7 @@ class PlayerEloInitializer:
         return self.players_elo_df
 
     # def fill_missing_season_elo(self, player_id, season):
+    # def find_debut_matches(self, player_id):
 
     def init_all_players_elo(self):
         """Initialize ELOs for a sample of players."""
@@ -202,20 +202,32 @@ class PlayerEloInitializer:
         #     self.players_elo_df = self.init_player_elo(player_id, game_id)
         #     # print("########################################")
         start_time = time.time()
+        uninit_player_ids = set(self.players_df['player_id'].values)
+
+        # Batch process all appearances for players who need ELOs
+        # test_df = self.appearances_df[self.appearances_df['player_id'] == 28003]
         for index, row in enumerate(self.appearances_df.itertuples(), start=1):
+            # for index, row in enumerate(test_df.itertuples(), start=1):
             player_id = row.player_id
             game_id = row.game_id
-            self.players_elo_df = self.init_player_elo(player_id, game_id)
+            # Only process if the player's ELO isn't initialized
+            if player_id in uninit_player_ids:
+                # print(f"{player_id} is uninitialised!")
+                # Update player's ELO
+                self.players_elo_df = self.init_player_elo(player_id, game_id)
+                # Remove player from the uninitialized set
+                uninit_player_ids.remove(player_id)
 
             # Print a message every 100 and 1000 iterations
             if index % 10000 == 0:
                 print(f"Processed {index} players- ({time.time() - start_time})")
 
-        # Lastly sort it.
-        self.players_elo_df = self.players_elo_df.sort_values(by=['player_id', 'season']).reset_index(drop=True)
-        # lastly save it as a csv file
+        # NOTE: Store only not NA Values
+        # self.players_elo_df = self.players_elo_df[self.players_elo_df['elo'].notna()]
+        self.players_elo_df.sort_values(by=['player_id', 'season'], inplace=True)
         data_path = os.path.join(self.data_dir, 'players_elo.csv')
-        self.players_elo_df.to_csv(data_path, index=True)
+        self.players_elo_df.to_csv(data_path, index=False)
+
         return self.players_elo_df
 
     def _get_season(self, game_id):
