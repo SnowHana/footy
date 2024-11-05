@@ -24,10 +24,12 @@ class PlayerEloInitializer:
         self.players_df = self.dataframes.get('players_df')
         self.player_valuations_df = self.dataframes.get('player_valuations_df')
         # TODO: Right now we init players elo df instead of reading it, because players_elo df only contains partial info
-        # self.players_elo_df = self.dataframes.get('players_elo_df', self._init_players_elo_df())
+        self.players_elo_df = self.dataframes.get('players_elo_df', self._init_players_elo_df())
         self.players_elo_df = self._init_players_elo_df()
         # Initialize season valuations
         self.season_valuations = self._init_season_valuations()
+
+        # Initialise SQL
 
     def _import_dataframes(self) -> dict:
         """Read data from CSV files and store as DataFrames."""

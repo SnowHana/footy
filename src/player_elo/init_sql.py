@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 
 import pandas as pd
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, Boolean, PrimaryKeyConstraint
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Data dir
 BASE_DIR = Path(__file__).resolve().parent
@@ -16,26 +16,264 @@ engine = create_engine(DATABASE_URI)
 Base = declarative_base()
 
 
+def _import_dataframes() -> dict:
+    """Read data from CSV files and store as DataFrames."""
+    global DATA_DIR
+    dataframes = {}
+    for dirpath, _, filenames in os.walk(DATA_DIR):
+        for filename in filenames:
+            file_key = f"{filename.split('.')[0]}"
+            filepath = os.path.join(dirpath, filename)
+            dataframes[file_key] = pd.read_csv(filepath, sep=",", encoding="UTF-8")
+            # Convert season column to integer if they exist
+            # if 'season' in dataframes[file_key].columns:
+            #     dataframes[file_key]['season'] = dataframes[file_key]['season'].astype(int)
+            print(f"{file_key}: {dataframes[file_key].shape}")
+    print("Data imported successfully.")
+    return dataframes
+
+# Define SQLAlchemy models for each DataFrame
+class GameLineup(Base):
+    __tablename__ = 'game_lineups'
+
+    game_lineups_id = Column(String, primary_key=True)
+    date = Column(String)
+    game_id = Column(Integer)
+    player_id = Column(Integer)
+    club_id = Column(Integer)
+    player_name = Column(String)
+    type = Column(String)
+    position = Column(String)
+    number = Column(String)
+    team_captain = Column(Integer)
+
+
+class Competition(Base):
+    __tablename__ = 'competitions'
+
+    competition_id = Column(String, primary_key=True)
+    competition_code = Column(String)
+    name = Column(String)
+    sub_type = Column(String)
+    type = Column(String)
+    country_id = Column(Integer)
+    country_name = Column(String)
+    domestic_league_code = Column(String)
+    confederation = Column(String)
+    url = Column(String)
+    is_major_national_league = Column(Boolean)
+
+
+class Appearance(Base):
+    __tablename__ = 'appearances'
+
+    appearance_id = Column(String, primary_key=True)
+    game_id = Column(Integer)
+    player_id = Column(Integer)
+    player_club_id = Column(Integer)
+    player_current_club_id = Column(Integer)
+    date = Column(String)
+    player_name = Column(String)
+    competition_id = Column(String)
+    yellow_cards = Column(Integer)
+    red_cards = Column(Integer)
+    goals = Column(Integer)
+    assists = Column(Integer)
+    minutes_played = Column(Integer)
+
+
+class PlayerValuation(Base):
+    __tablename__ = 'player_valuations'
+
+    player_id = Column(Integer, primary_key=True)
+    date = Column(String)
+    market_value_in_eur = Column(Integer)
+    current_club_id = Column(Integer)
+    player_club_domestic_competition_id = Column(String)
+
+
+class GameEvent(Base):
+    __tablename__ = 'game_events'
+
+    game_event_id = Column(String, primary_key=True)
+    date = Column(String)
+    game_id = Column(Integer)
+    minute = Column(Integer)
+    type = Column(String)
+    club_id = Column(Integer)
+    player_id = Column(Integer)
+    description = Column(String)
+    player_in_id = Column(Float)
+    player_assist_id = Column(Float)
+
+
+class Transfer(Base):
+    __tablename__ = 'transfers'
+
+    player_id = Column(Integer)
+    transfer_date = Column(String)
+    transfer_season = Column(String)
+    from_club_id = Column(Integer)
+    to_club_id = Column(Integer)
+    from_club_name = Column(String)
+    to_club_name = Column(String)
+    transfer_fee = Column(Float)
+    market_value_in_eur = Column(Float)
+    player_name = Column(String)
+
+    __table_args__ = (
+        PrimaryKeyConstraint('player_id', 'transfer_date', name='transfer_pk'),
+    )
+
+
+class Player(Base):
+    __tablename__ = 'players'
+
+    player_id = Column(Integer, primary_key=True)
+    first_name = Column(String)
+    last_name = Column(String)
+    name = Column(String)
+    last_season = Column(Integer)
+    current_club_id = Column(Integer)
+    player_code = Column(String)
+    country_of_birth = Column(String)
+    city_of_birth = Column(String)
+    country_of_citizenship = Column(String)
+    date_of_birth = Column(String)
+    sub_position = Column(String)
+    position = Column(String)
+    foot = Column(String)
+    height_in_cm = Column(Float)
+    contract_expiration_date = Column(String)
+    agent_name = Column(String)
+    image_url = Column(String)
+    url = Column(String)
+    current_club_domestic_competition_id = Column(String)
+    current_club_name = Column(String)
+    market_value_in_eur = Column(Float)
+    highest_market_value_in_eur = Column(Float)
+
+
+class Game(Base):
+    __tablename__ = 'games'
+
+    game_id = Column(Integer, primary_key=True)
+    competition_id = Column(String)
+    season = Column(Integer)
+    round = Column(String)
+    date = Column(String)
+    home_club_id = Column(Integer)
+    away_club_id = Column(Integer)
+    home_club_goals = Column(Integer)
+    away_club_goals = Column(Integer)
+    home_club_position = Column(Float)
+    away_club_position = Column(Float)
+    home_club_manager_name = Column(String)
+    away_club_manager_name = Column(String)
+    stadium = Column(String)
+    attendance = Column(Float)
+    referee = Column(String)
+    url = Column(String)
+    home_club_formation = Column(String)
+    away_club_formation = Column(String)
+    home_club_name = Column(String)
+    away_club_name = Column(String)
+    aggregate = Column(String)
+    competition_type = Column(String)
+
+
+class ClubGame(Base):
+    __tablename__ = 'club_games'
+
+    game_id = Column(Integer, primary_key=True)
+    club_id = Column(Integer)
+    own_goals = Column(Integer)
+    own_position = Column(Float)
+    own_manager_name = Column(String)
+    opponent_id = Column(Integer)
+    opponent_goals = Column(Integer)
+    opponent_position = Column(Float)
+    opponent_manager_name = Column(String)
+    hosting = Column(String)
+    is_win = Column(Integer)
+
+
 class PlayerElo(Base):
     __tablename__ = 'players_elo'
 
     player_id = Column(Integer, primary_key=True)
-    season = Column(Integer)
-    first_name = Column(String(50))
-    last_name = Column(String(50))
-    name = Column(String(100))
-    player_code = Column(String(50))
-    country_of_birth = Column(String(50))
-    date_of_birth = Column(Date)
+    season = Column(Float)
+    first_name = Column(String)
+    last_name = Column(String)
+    name = Column(String)
+    player_code = Column(String)
+    country_of_birth = Column(String)
+    date_of_birth = Column(String)
     elo = Column(Float)
 
 
-# Create the table in the database
+class Club(Base):
+    __tablename__ = 'clubs'
+
+    club_id = Column(Integer, primary_key=True)
+    club_code = Column(String)
+    name = Column(String)
+    domestic_competition_id = Column(String)
+    total_market_value = Column(Float)
+    squad_size = Column(Integer)
+    average_age = Column(Float)
+    foreigners_number = Column(Integer)
+    foreigners_percentage = Column(Float)
+    national_team_players = Column(Integer)
+    stadium_name = Column(String)
+    stadium_seats = Column(Integer)
+    net_transfer_record = Column(String)
+    coach_name = Column(Float)
+    last_season = Column(Integer)
+    filename = Column(String)
+    url = Column(String)
+
+
+# Connect to the database (replace with your database URL)
+# engine = create_engine('postgresql://username:password@localhost:5432/football')
+
+# Create all tables
 Base.metadata.create_all(engine)
 
+# Load data from CSV files and write to SQL
+dataframes = _import_dataframes()
+# dataframes = {
+#     "game_lineups": game_lineups_df,
+#     "competitions": competitions_df,
+#     "appearances": appearances_df,
+#     "player_valuations": player_valuations_df,
+#     "game_events": game_events_df,
+#     "transfers": transfers_df,
+#     "players": players_df,
+#     "games": games_df,
+#     "club_games": club_games_df,
+#     "players_elo": players_elo_df,
+#     "clubs": clubs_df
+# }
 
-players_elo_df = pd.read_csv(os.path.join(DATA_DIR, 'players_elo.csv'))
-players_elo_df.to_sql('players_elo', engine, if_exists='replace', index=False)
+# Create a session
+Session = sessionmaker(bind=engine)
+session = Session()
+
+for table_name, dataframe in dataframes.items():
+    dataframe.to_sql(table_name, con=engine, if_exists='replace', index=False)
+    print(f"{table_name} is imported.")
+
+# Commit the session and close
+session.commit()
+session.close()
+
+# Create the table in the database
+# Base.metadata.create_all(engine)
+
+
+# players_elo_df = pd.read_csv(os.path.join(DATA_DIR, 'players_elo.csv'))
+# players_elo_df.to_sql('players_elo', engine, if_exists='replace', index=False)
 
 # Verify data load
 #
