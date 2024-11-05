@@ -242,19 +242,7 @@ Base.metadata.create_all(engine)
 
 # Load data from CSV files and write to SQL
 dataframes = _import_dataframes()
-# dataframes = {
-#     "game_lineups": game_lineups_df,
-#     "competitions": competitions_df,
-#     "appearances": appearances_df,
-#     "player_valuations": player_valuations_df,
-#     "game_events": game_events_df,
-#     "transfers": transfers_df,
-#     "players": players_df,
-#     "games": games_df,
-#     "club_games": club_games_df,
-#     "players_elo": players_elo_df,
-#     "clubs": clubs_df
-# }
+
 
 # Create a session
 Session = sessionmaker(bind=engine)
