@@ -32,12 +32,16 @@ DATABASE_CONFIG = {
 
 # Step 1: Connect to PostgreSQL
 def connect_to_db():
+    """
+
+    @return:
+    """
     conn = psycopg.connect(**DATABASE_CONFIG)
     # conn.autocommit = True
     return conn
 
 
-def goals_in_game_per_club(cur, game_id) -> dict:
+def get_goals_in_game_per_club(cur, game_id) -> dict:
     """
     Find goals per club in a single game
     @param cur: Cursor
@@ -51,16 +55,18 @@ def goals_in_game_per_club(cur, game_id) -> dict:
                 AND game_id = {game_id};""")
     res = {}
     for result in cur.fetchall():
-        res[result[2]] = res.get(result[2], []) + [result[1]]
+        club_id = result[2]
+        minute = result[1]
+        res[club_id] = res.get(club_id, []) + [minute]
     return res
 
 
-def goal_diff_when_playing(cur, game_id) -> dict:
+def get_players_playing_time(cur, game_id) -> dict:
     """
     Find out starting-ending minutes of players in a game
     @param cur:
     @param game_id: Game ID of a game to analyse
-    @return: {player_id:(mp_start, mp_end)}
+    @return: {(club_id, player_id) :(mp_start, mp_end)}
     """
     # Find out when player was subbed in / subbed off
     cur.execute(f"""SELECT game_id, minute, type, club_id, player_id, player_in_id
@@ -69,36 +75,76 @@ def goal_diff_when_playing(cur, game_id) -> dict:
     players_in = {}
     players_out = {}
     for result in cur.fetchall():
-        players_in[result[-1]] = result[1]
-        players_out[result[-2]] = result[1]
+        minute = result[1]
+        club_id = result[3]
+        player_id = result[4]
+        player_in_id = result[5]
+        players_in[(club_id, player_in_id)] = minute
+        players_out[(club_id, player_id)] = minute
 
-    cur.execute(f"""SELECT game_id, player_id, minutes_played
+    cur.execute(f"""SELECT game_id, player_id, minutes_played, player_club_id
                     FROM appearances
                     WHERE game_id = {game_id};""")
     starting_players = {}
     for result in cur.fetchall():
-        starting_players[result[1]] = result[-1]
+        # Starting players
+        club_id = result[-1]
+        player_id = result[1]
+        minute = result[2]
+        starting_players[(club_id, player_id)] = minute
 
-    # print(players_in)
-    # print(players_out)
-    # print(starting_players)
-    # played_players = starting_players | players_in
-    play_duration = {}
-    # for player, minute in (starting_players | players_in).items():
+    play_time = {}
     # Iterate through all players played in the game
     # if player in starting_players:
     global FULL_GAME_MINUTES
     # For startings.
-    for player, minute in starting_players.items():
-        play_duration[player] = (0, players_out.get(player, minute))
+    for (club_id, player_id), minute in starting_players.items():
+        play_time[(club_id, player_id)] = (0, players_out.get((club_id, player_id), minute))
     # For subbed-ins
-    for player, in_minute in players_in.items():
-        play_duration[player] = (in_minute, players_out.get(player, FULL_GAME_MINUTES))
+    for (club_id, player_id), in_minute in players_in.items():
+        # This handles the case of
+        # Subbed player getting subbed off lol
+        play_time[(club_id, player_id)] = (in_minute, players_out.get((club_id, player_id), FULL_GAME_MINUTES))
 
-    return play_duration
+    return play_time
 
-def match_impact_players(cur, game_id):
-    goal_minutes =
+
+def get_match_impact_players(cur, game_id):
+    """
+    Get match impact (goal difference while player was on the pitch)
+    of players at the game
+    @param cur:
+    @param game_id:
+    @return: {(club_id, player_id): goal_diff}
+    """
+    goal_minutes = get_goals_in_game_per_club(cur, game_id)
+    play_times = get_players_playing_time(cur, game_id)
+    player_goal_impact = {}
+    for (club_id, player_id), (start_time, end_time) in play_times.items():
+        # Basically we wanna know GOAL diff when player was on the pitch
+        # 1. Goal scored
+        goal_scored = 0
+        goal_conceded = 0
+        # Check goals scored by the player's team while the player was on the pitch
+        for minute in goal_minutes.get(club_id, []):
+            if start_time <= minute <= end_time:
+                goal_scored += 1
+        # Check goals conceded by the opposing teams while the player was on the pitch
+        for opp_club_id, opp_goal_minutes in goal_minutes.items():
+            if opp_club_id != club_id:
+                # Opponent club scored
+                for minute in opp_goal_minutes:
+                    if start_time <= minute <= end_time:
+                        goal_conceded += 1
+
+        # Calculate goal diff.
+        goal_difference = goal_scored - goal_conceded
+        player_goal_impact[(club_id, player_id)] = goal_difference
+
+    return player_goal_impact
+
+
+
 # Sample usage
 conn = None
 cur = None
@@ -109,30 +155,19 @@ try:
 
     # goal_dict = goals_in_game_per_club(cur, 2224008)
 
-    goal_diff_when_playing(cur, 2224008)
+    # get_players_playing_time(cur, 2224008)
+    res = get_match_impact_players(cur, 2224008)
+    print(res)
 
-    # cur.execute("""
-    # SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
-    # """)
-    # tables = cur.fetchall()
-    #
-    # for table in tables:
-    #     table_name = table[0]
-    #     print(f"Table: {table_name}")
-    #
-    #     # Get columns for the current table
-    #     cur.execute(
-    #         f"SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '{table_name}'")
-    #     columns = cur.fetchall()
-    #     for column in columns:
-    #         print(f" - Column: {column[0]} | Type: {column[1]}")
-    #     print("\n")
-except:
-    raise ValueError('Could not connect to database')
+except (psycopg.OperationalError, psycopg.ProgrammingError) as e:
+    print(f"Database error: {str(e)}")
+    raise ValueError('Could not connect to database or execute query')
 finally:
     # Close the connection
-    cur.close()
-    conn.close()
+    if cur:
+        cur.close()
+    if conn:
+        conn.close()
 
 #
 # # Step 2: Create the database (if it doesn't exist)
