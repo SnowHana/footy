@@ -143,6 +143,25 @@ def get_match_impact_players(cur, game_id):
 
     return player_goal_impact
 
+def get_players_rating(cur, game_id):
+    # Get players rating for a game.
+    pass
+def get_team_rating(cur, game_id):
+    cur.execute(f"""SELECT home_club_id, away_club_id, home_club_goals, away_club_goals
+                    FROM games
+                    WHERE game_id = {game_id};""")
+    res = cur.fetchone()
+    home_club_id = res[0]
+    away_club_id = res[1]
+    home_club_goals = res[2]
+    away_club_goals = res[3]
+
+    play_time = get_players_playing_time(cur, game_id)
+
+
+
+def calc_indiv_change(cur, game_id):
+    pass
 
 
 # Sample usage

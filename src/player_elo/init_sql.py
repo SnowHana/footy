@@ -37,7 +37,7 @@ class GameLineup(Base):
     __tablename__ = 'game_lineups'
 
     game_lineups_id = Column(String, primary_key=True)
-    date = Column(String)
+    date = Column(Date)
     game_id = Column(Integer)
     player_id = Column(Integer)
     club_id = Column(Integer)
@@ -72,7 +72,7 @@ class Appearance(Base):
     player_id = Column(Integer)
     player_club_id = Column(Integer)
     player_current_club_id = Column(Integer)
-    date = Column(String)
+    date = Column(Date)
     player_name = Column(String)
     competition_id = Column(String)
     yellow_cards = Column(Integer)
@@ -85,18 +85,23 @@ class Appearance(Base):
 class PlayerValuation(Base):
     __tablename__ = 'player_valuations'
 
-    player_id = Column(Integer, primary_key=True)
-    date = Column(String)
+    player_id = Column(Integer)
+    date = Column(Date)
     market_value_in_eur = Column(Integer)
     current_club_id = Column(Integer)
     player_club_domestic_competition_id = Column(String)
+
+
+    __table_args__ = (
+        PrimaryKeyConstraint('player_id', 'date',  name='player_valuation_pk'),
+    )
 
 
 class GameEvent(Base):
     __tablename__ = 'game_events'
 
     game_event_id = Column(String, primary_key=True)
-    date = Column(String)
+    date = Column(Date)
     game_id = Column(Integer)
     minute = Column(Integer)
     type = Column(String)
@@ -111,7 +116,7 @@ class Transfer(Base):
     __tablename__ = 'transfers'
 
     player_id = Column(Integer)
-    transfer_date = Column(String)
+    transfer_date = Column(Date)
     transfer_season = Column(String)
     from_club_id = Column(Integer)
     to_club_id = Column(Integer)
@@ -122,7 +127,7 @@ class Transfer(Base):
     player_name = Column(String)
 
     __table_args__ = (
-        PrimaryKeyConstraint('player_id', 'transfer_date', name='transfer_pk'),
+        PrimaryKeyConstraint('player_id', 'from_club_id', 'to_club_id', name='transfer_pk'),
     )
 
 
@@ -139,12 +144,12 @@ class Player(Base):
     country_of_birth = Column(String)
     city_of_birth = Column(String)
     country_of_citizenship = Column(String)
-    date_of_birth = Column(String)
+    date_of_birth = Column(Date)
     sub_position = Column(String)
     position = Column(String)
     foot = Column(String)
     height_in_cm = Column(Float)
-    contract_expiration_date = Column(String)
+    contract_expiration_date = Column(Date)
     agent_name = Column(String)
     image_url = Column(String)
     url = Column(String)
@@ -161,17 +166,17 @@ class Game(Base):
     competition_id = Column(String)
     season = Column(Integer)
     round = Column(String)
-    date = Column(String)
+    date = Column(Date)
     home_club_id = Column(Integer)
     away_club_id = Column(Integer)
     home_club_goals = Column(Integer)
     away_club_goals = Column(Integer)
-    home_club_position = Column(Float)
-    away_club_position = Column(Float)
+    home_club_position = Column(Integer)
+    away_club_position = Column(Integer)
     home_club_manager_name = Column(String)
     away_club_manager_name = Column(String)
     stadium = Column(String)
-    attendance = Column(Float)
+    attendance = Column(Integer)
     referee = Column(String)
     url = Column(String)
     home_club_formation = Column(String)
@@ -188,11 +193,11 @@ class ClubGame(Base):
     game_id = Column(Integer, primary_key=True)
     club_id = Column(Integer)
     own_goals = Column(Integer)
-    own_position = Column(Float)
+    own_position = Column(Integer)
     own_manager_name = Column(String)
     opponent_id = Column(Integer)
     opponent_goals = Column(Integer)
-    opponent_position = Column(Float)
+    opponent_position = Column(Integer)
     opponent_manager_name = Column(String)
     hosting = Column(String)
     is_win = Column(Integer)
@@ -201,16 +206,19 @@ class ClubGame(Base):
 class PlayerElo(Base):
     __tablename__ = 'players_elo'
 
-    player_id = Column(Integer, primary_key=True)
-    season = Column(Float)
+    player_id = Column(Integer)
+    season = Column(Integer)
     first_name = Column(String)
     last_name = Column(String)
     name = Column(String)
     player_code = Column(String)
     country_of_birth = Column(String)
-    date_of_birth = Column(String)
+    date_of_birth = Column(Date)
     elo = Column(Float)
 
+    __table_args__ = (
+        PrimaryKeyConstraint('player_id', 'season', name='player_elo_pk'),
+    )
 
 class Club(Base):
     __tablename__ = 'clubs'
