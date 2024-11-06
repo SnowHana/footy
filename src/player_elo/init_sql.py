@@ -103,8 +103,8 @@ class GameEvent(Base):
     club_id = Column(Integer)
     player_id = Column(Integer)
     description = Column(String)
-    player_in_id = Column(Float)
-    player_assist_id = Column(Float)
+    player_in_id = Column(Integer)
+    player_assist_id = Column(Integer)
 
 
 class Transfer(Base):

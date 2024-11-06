@@ -18,6 +18,8 @@ import psycopg
 #     print("\n")
 
 #
+# Globals
+FULL_GAME_MINUTES = 90
 # Connection configuration
 DATABASE_CONFIG = {
     'dbname': 'football',
@@ -35,24 +37,80 @@ def connect_to_db():
     return conn
 
 
-def goals_in_game(cur, game_id):
+def goals_in_game_per_club(cur, game_id) -> dict:
+    """
+    Find goals per club in a single game
+    @param cur: Cursor
+    @param game_id: Game ID of a game to analyse
+    @return Dictionary of goals per club in a single game {club_id: [minutes when they scored a goal]
+    """
+    # Return list of goals scored in a game
     cur.execute(f"""SELECT game_id, minute, club_id, player_id
                 FROM game_events
                 WHERE type = 'Goals'
                 AND game_id = {game_id};""")
     res = {}
     for result in cur.fetchall():
-        res['game_id'] = result[0]
+        res[result[2]] = res.get(result[2], []) + [result[1]]
+    return res
 
 
+def goal_diff_when_playing(cur, game_id) -> dict:
+    """
+    Find out starting-ending minutes of players in a game
+    @param cur:
+    @param game_id: Game ID of a game to analyse
+    @return: {player_id:(mp_start, mp_end)}
+    """
+    # Find out when player was subbed in / subbed off
+    cur.execute(f"""SELECT game_id, minute, type, club_id, player_id, player_in_id
+                    FROM game_events
+                    WHERE type = 'Substitutions' AND game_id = {game_id};""")
+    players_in = {}
+    players_out = {}
+    for result in cur.fetchall():
+        players_in[result[-1]] = result[1]
+        players_out[result[-2]] = result[1]
+
+    cur.execute(f"""SELECT game_id, player_id, minutes_played
+                    FROM appearances
+                    WHERE game_id = {game_id};""")
+    starting_players = {}
+    for result in cur.fetchall():
+        starting_players[result[1]] = result[-1]
+
+    # print(players_in)
+    # print(players_out)
+    # print(starting_players)
+    # played_players = starting_players | players_in
+    play_duration = {}
+    # for player, minute in (starting_players | players_in).items():
+    # Iterate through all players played in the game
+    # if player in starting_players:
+    global FULL_GAME_MINUTES
+    # For startings.
+    for player, minute in starting_players.items():
+        play_duration[player] = (0, players_out.get(player, minute))
+    # For subbed-ins
+    for player, in_minute in players_in.items():
+        play_duration[player] = (in_minute, players_out.get(player, FULL_GAME_MINUTES))
+
+    return play_duration
+
+def match_impact_players(cur, game_id):
+    goal_minutes =
 # Sample usage
 conn = None
+cur = None
 try:
     # Establish the connection
     conn = connect_to_db()
     cur = conn.cursor()
 
-    goals_in_game(cur,2224008 )
+    # goal_dict = goals_in_game_per_club(cur, 2224008)
+
+    goal_diff_when_playing(cur, 2224008)
+
     # cur.execute("""
     # SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
     # """)
@@ -73,6 +131,7 @@ except:
     raise ValueError('Could not connect to database')
 finally:
     # Close the connection
+    cur.close()
     conn.close()
 
 #
