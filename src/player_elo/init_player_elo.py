@@ -25,7 +25,7 @@ class PlayerEloInitializer:
         self.player_valuations_df = self.dataframes.get('player_valuations_df')
         # TODO: Right now we init players elo df instead of reading it, because players_elo df only contains partial info
         self.players_elo_df = self.dataframes.get('players_elo_df', self._init_players_elo_df())
-        self.players_elo_df = self._init_players_elo_df()
+        # self.players_elo_df = self._init_players_elo_df()
         # Initialize season valuations
         self.season_valuations = self._init_season_valuations()
 
@@ -51,9 +51,12 @@ class PlayerEloInitializer:
         df = self.players_df.copy()
         df['elo'] = None
         player_val_df_with_season = self._add_season_column(self.player_valuations_df)
+        player_val_df_with_season = self._fill_season_gaps(player_val_df_with_season)
+
         df_sorted = player_val_df_with_season.loc[
             player_val_df_with_season.groupby(['player_id', 'season'])['date'].idxmin()
         ]
+        # TODO: Add missing season.
         df = df.merge(df_sorted[['player_id', 'season']], on='player_id', how='left')
         # Now, we add missing seasons.
         # ie) There are cases where ther3 is a gap in the data (ie. 2011, 2012, 2014, 2017)
@@ -81,6 +84,46 @@ class PlayerEloInitializer:
         #
         return df[existing_columns]
         # return df
+
+    @staticmethod
+    def _fill_season_gaps(df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Fill season gaps for each player individually, ensuring each player has continuous season entries
+        from their minimum to maximum season.
+        """
+        # Check for required columns
+        if 'player_id' not in df.columns or 'season' not in df.columns:
+            raise ValueError("Dataframe must contain 'player_id' and 'season' columns.")
+
+        # Store columns to preserve other than `elo`
+        other_columns = df.columns.difference(['elo']).tolist()
+        # other_columns = [col for col in df.columns if col not in ['elo']]
+
+        # Create a list to store filled data for each player
+        filled_dfs = []
+
+        # Process each player individually
+        for player_id, group in df.groupby('player_id'):
+            # Reset index on group to avoid issues with multi-indexing
+            # group = group.reset_index(drop=True)
+
+            # Cases when there is no data of season
+            min_season, max_season = group['season'].min(), group['season'].max()
+            if pd.isna(min_season) or pd.isna(max_season):
+                continue
+
+            df2 = pd.concat(
+                [group.set_index('season').reindex(np.arange(group['season'].min(), group['season'].max() + 1))])
+
+            df2['elo'] = df2['elo'].ffill()
+
+            # Append the filled data for this player
+            filled_dfs.append(df2)
+
+        # Concatenate all filled data into one DataFrame
+        filled_df = pd.concat(filled_dfs, ignore_index=True)
+
+        return filled_df
 
     @staticmethod
     def _add_season_column(df: pd.DataFrame) -> pd.DataFrame:
@@ -245,5 +288,56 @@ class PlayerEloInitializer:
 
 
 # Usage
-initializer = PlayerEloInitializer()
-players_elo_df = initializer.init_all_players_elo()
+
+@staticmethod
+def _fill_season_gaps(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Fill season gaps for each player individually, ensuring each player has continuous season entries
+    from their minimum to maximum season.
+    """
+    # Check for required columns
+    if 'player_id' not in df.columns or 'season' not in df.columns:
+        raise ValueError("Dataframe must contain 'player_id' and 'season' columns.")
+
+    # Store columns to preserve other than `elo`
+    other_columns = df.columns.difference(['elo']).tolist()
+    # other_columns = [col for col in df.columns if col not in ['elo']]
+
+    # Create a list to store filled data for each player
+    filled_dfs = []
+
+    # Process each player individually
+    for player_id, group in df.groupby('player_id'):
+        # Reset index on group to avoid issues with multi-indexing
+        # group = group.reset_index(drop=True)
+
+        # Cases when there is no data of season
+        min_season, max_season = group['season'].min(), group['season'].max()
+        if pd.isna(min_season) or pd.isna(max_season):
+            continue
+
+        df2 = pd.concat(
+            [group.set_index('season').reindex(np.arange(group['season'].min(), group['season'].max() + 1))])
+
+        df2['elo'] = df2['elo'].ffill()
+
+        # Append the filled data for this player
+        filled_dfs.append(df2)
+
+    # Concatenate all filled data into one DataFrame
+    filled_df = pd.concat(filled_dfs, ignore_index=True)
+
+    return filled_df
+
+
+base_dir = Path(__file__).resolve().parent
+data_dir = base_dir.parents[0] / 'data' / 'transfer_data'
+df = pd.read_csv(os.path.join(data_dir, 'players_elo.csv'))
+res = _fill_season_gaps(df)
+data_path = os.path.join(data_dir, 'players_elo_copy.csv')
+res.to_csv(data_path, index=False)
+
+
+
+# initializer = PlayerEloInitializer()
+# players_elo_df = initializer.init_all_players_elo()
