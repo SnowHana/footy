@@ -115,7 +115,11 @@ class PlayerEloInitializer:
             df2 = pd.concat(
                 [group.set_index('season').reindex(np.arange(group['season'].min(), group['season'].max() + 1))])
 
-            df2['elo'] = df2['elo'].ffill()
+            # df2['elo'] = df2['elo'].ffill()
+            with pd.option_context('future.no_silent_downcasting', True):
+                df2 = df2.ffill()
+            # df2 = df2.infer_objects()
+            df2 = df2.reset_index()
 
             # Append the filled data for this player
             filled_dfs.append(df2)
@@ -316,10 +320,16 @@ def _fill_season_gaps(df: pd.DataFrame) -> pd.DataFrame:
         if pd.isna(min_season) or pd.isna(max_season):
             continue
 
+
         df2 = pd.concat(
             [group.set_index('season').reindex(np.arange(group['season'].min(), group['season'].max() + 1))])
 
-        df2['elo'] = df2['elo'].ffill()
+        # df2['elo'] = df2['elo'].ffill()
+        with pd.option_context('future.no_silent_downcasting', True):
+            df2 = df2.ffill()
+        # df2 = df2.infer_objects()
+        df2 = df2.reset_index()
+
 
         # Append the filled data for this player
         filled_dfs.append(df2)
