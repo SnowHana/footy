@@ -32,6 +32,7 @@ def _import_dataframes() -> dict:
     print("Data imported successfully.")
     return dataframes
 
+
 # Define SQLAlchemy models for each DataFrame
 class GameLineup(Base):
     __tablename__ = 'game_lineups'
@@ -91,9 +92,8 @@ class PlayerValuation(Base):
     current_club_id = Column(Integer)
     player_club_domestic_competition_id = Column(String)
 
-
     __table_args__ = (
-        PrimaryKeyConstraint('player_id', 'date',  name='player_valuation_pk'),
+        PrimaryKeyConstraint('player_id', 'date', name='player_valuation_pk'),
     )
 
 
@@ -220,6 +220,7 @@ class PlayerElo(Base):
         PrimaryKeyConstraint('player_id', 'season', name='player_elo_pk'),
     )
 
+
 class Club(Base):
     __tablename__ = 'clubs'
 
@@ -245,24 +246,25 @@ class Club(Base):
 # Connect to the database (replace with your database URL)
 # engine = create_engine('postgresql://username:password@localhost:5432/football')
 
-# Create all tables
-Base.metadata.create_all(engine)
 
-# Load data from CSV files and write to SQL
-dataframes = _import_dataframes()
+def main():
+    # Create all tables
+    Base.metadata.create_all(engine)
 
+    # Load data from CSV files and write to SQL
+    dataframes = _import_dataframes()
 
-# Create a session
-Session = sessionmaker(bind=engine)
-session = Session()
+    # Create a session
+    Session = sessionmaker(bind=engine)
+    session = Session()
 
-for table_name, dataframe in dataframes.items():
-    dataframe.to_sql(table_name, con=engine, if_exists='replace', index=False)
-    print(f"{table_name} is imported.")
+    for table_name, dataframe in dataframes.items():
+        dataframe.to_sql(table_name, con=engine, if_exists='replace', index=False)
+        print(f"{table_name} is imported.")
 
-# Commit the session and close
-session.commit()
-session.close()
+    # Commit the session and close
+    session.commit()
+    session.close()
 
 # Create the table in the database
 # Base.metadata.create_all(engine)
