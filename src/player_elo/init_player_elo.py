@@ -303,9 +303,11 @@ def _fill_season_gaps(df: pd.DataFrame) -> pd.DataFrame:
     if 'player_id' not in df.columns or 'season' not in df.columns:
         raise ValueError("Dataframe must contain 'player_id' and 'season' columns.")
 
+    # Store original data types
+    original_dtypes = df.dtypes
+
     # Store columns to preserve other than `elo`
     other_columns = df.columns.difference(['elo']).tolist()
-    # other_columns = [col for col in df.columns if col not in ['elo']]
 
     # Create a list to store filled data for each player
     filled_dfs = []
@@ -313,31 +315,83 @@ def _fill_season_gaps(df: pd.DataFrame) -> pd.DataFrame:
     # Process each player individually
     for player_id, group in df.groupby('player_id'):
         # Reset index on group to avoid issues with multi-indexing
-        # group = group.reset_index(drop=True)
-
-        # Cases when there is no data of season
         min_season, max_season = group['season'].min(), group['season'].max()
         if pd.isna(min_season) or pd.isna(max_season):
             continue
 
+        # Reindex seasons to fill the gaps
+        group = group.set_index('season')
+        df_filled = group.reindex(np.arange(min_season, max_season + 1))
 
-        df2 = pd.concat(
-            [group.set_index('season').reindex(np.arange(group['season'].min(), group['season'].max() + 1))])
-
-        # df2['elo'] = df2['elo'].ffill()
+        # Forward fill missing values
         with pd.option_context('future.no_silent_downcasting', True):
-            df2 = df2.ffill()
-        # df2 = df2.infer_objects()
-        df2 = df2.reset_index()
+            df_filled = df_filled.ffill().infer_objects(copy=False)
 
+        # Reset index and restore player_id
+        df_filled = df_filled.reset_index()
+        df_filled['player_id'] = player_id
 
         # Append the filled data for this player
-        filled_dfs.append(df2)
+        filled_dfs.append(df_filled)
 
     # Concatenate all filled data into one DataFrame
     filled_df = pd.concat(filled_dfs, ignore_index=True)
 
+    # Restore original data types
+    for col in filled_df.columns:
+        if col in original_dtypes:
+            filled_df[col] = filled_df[col].astype(original_dtypes[col])
+
+    # Reorder columns to have 'player_id' first and 'season' second
+    cols = ['player_id', 'season'] + [col for col in filled_df.columns if col not in ['player_id', 'season']]
+    filled_df = filled_df[cols]
+
     return filled_df
+#
+# def _fill_season_gaps(df: pd.DataFrame) -> pd.DataFrame:
+#     """
+#     Fill season gaps for each player individually, ensuring each player has continuous season entries
+#     from their minimum to maximum season.
+#     """
+#     # Check for required columns
+#     if 'player_id' not in df.columns or 'season' not in df.columns:
+#         raise ValueError("Dataframe must contain 'player_id' and 'season' columns.")
+#
+#     # Store columns to preserve other than `elo`
+#     other_columns = df.columns.difference(['elo']).tolist()
+#     # other_columns = [col for col in df.columns if col not in ['elo']]
+#
+#     # Create a list to store filled data for each player
+#     filled_dfs = []
+#
+#     # Process each player individually
+#     for player_id, group in df.groupby('player_id'):
+#         # Reset index on group to avoid issues with multi-indexing
+#         # group = group.reset_index(drop=True)
+#
+#         # Cases when there is no data of season
+#         min_season, max_season = group['season'].min(), group['season'].max()
+#         if pd.isna(min_season) or pd.isna(max_season):
+#             continue
+#
+#
+#         df2 = pd.concat(
+#             [group.set_index('season').reindex(np.arange(group['season'].min(), group['season'].max() + 1))])
+#
+#         # df2['elo'] = df2['elo'].ffill()
+#         with pd.option_context('future.no_silent_downcasting', True):
+#             df2 = df2.ffill()
+#         # df2 = df2.infer_objects()
+#         df2 = df2.reset_index()
+#
+#
+#         # Append the filled data for this player
+#         filled_dfs.append(df2)
+#
+#     # Concatenate all filled data into one DataFrame
+#     filled_df = pd.concat(filled_dfs, ignore_index=True)
+#
+#     return filled_df
 
 
 base_dir = Path(__file__).resolve().parent

@@ -266,6 +266,9 @@ def main():
     session.commit()
     session.close()
 
+
+if __name__ == "__main__":
+    main()
 # Create the table in the database
 # Base.metadata.create_all(engine)
 
