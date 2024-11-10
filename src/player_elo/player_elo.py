@@ -4,6 +4,7 @@ import pandas as pd
 import psycopg
 from typing import Dict, List, Tuple, Optional, Union
 from .elo_calculation_mixin import ELOCalculationMixin
+from .base_analysis import BaseAnalysis
 # Typing
 ClubGoals = Dict[int, List[int]]
 PlayersPlayTimes = Dict[Tuple[int, int], Tuple[int, int]]
@@ -417,6 +418,10 @@ class PlayerAnalysis(ELOCalculationMixin):
             self._player_expectation = self._calculate_player_expectation()
         return self._player_expectation
 
+class ClubAnalysis(BaseAnalysis):
+
+    def __init__(self, game_analysis: GameAnalysis, club_id: int):
+        super().__init__(game_analysis, entity_id=club_id, is_club=True)
 
 
 # Usage
