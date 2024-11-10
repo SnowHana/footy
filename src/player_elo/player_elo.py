@@ -1,323 +1,360 @@
-import numpy as np
+from sqlalchemy import create_engine, inspect
 import pandas as pd
-from scipy.stats import zscore
-from utils import *
+import psycopg
+from typing import Dict, List, Tuple, Optional
 
-BASE_ELO = 1500
-ELO_RANGE = 1000
+# Typing
+ClubGoals = Dict[int, List[int]]
+PlayersPlayTimes = Dict[Tuple[int, int], Tuple[int, int]]
+MatchImpacts = Dict[Tuple[int, int], int]
+
+DATABASE_CONFIG = {
+    'dbname': 'football',
+    'user': 'postgres',
+    'password': '1234',
+    'host': 'localhost',
+    'port': '5432'
+}
 
 
-# Create new df
-
-# Create season column for players df...for each season he ran?
-def init_players_elo_df(players_df: pd.DataFrame, player_valuations_df: pd.DataFrame) -> pd.DataFrame:
+class DatabaseConnection:
     """
-    Init players elo df based on a players_df
-    @param players_df:
-    @return:
+    Set up connection with PostgreSQL database
     """
-    players_elo_df = players_df.copy()
-    players_elo_df['elo'] = None
-    # Find seasons player played for each season
-    df_sorted = add_season_column(player_valuations_df)
-    df_sorted = df_sorted.loc[df_sorted.groupby(['player_id', 'season'])['date'].idxmin()]
-    # seasons = sorted(oldest_player_valuations_df['season'].unique())
-    players_elo_df = players_elo_df.merge(
-        df_sorted[['player_id', 'season']],
-        on='player_id',
-        how='left'
-    )
 
-    return players_elo_df
+    def __init__(self, config: Dict[str, str]):
+        self.config = config
+        self.conn = None
 
+    def __enter__(self):
+        self.conn = psycopg.connect(**self.config)
+        return self.conn
 
-def is_enough_data_to_init_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame,
-                               player_id, game_id):
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.conn:
+            self.conn.close()
+#
+class GameAnalysis:
     """
-    Decide if we should use
-    1. Squad's average ELO
-    2. Player's market value of that time
-    to initialize the player's ELO.
-    Assumes the player's ELO needs initialization.
+    Analysis of a Single Game. Doesn't focus on a single player,
+    but contains information about the game so that it can further be used
+    in PlayerAnalysis class
     """
-    # Retrieve teammates (excluding the player themselves)
-    teammates = appearances_df.loc[(appearances_df['game_id'] == game_id) & (appearances_df['player_id'] != player_id)]
 
-    # Get the season of the game
-    if game_id not in games_df['game_id'].values:
-        return None  # Return None if the game_id is invalid
+    FULL_GAME_MINUTES = 90
 
-    season = games_df.loc[games_df['game_id'] == game_id, 'season'].iloc[0]
+    def __init__(self, cur, game_id: int):
+        """
+        Initialize.
 
-    if teammates.empty:
-        # No teammates found, use player's market value for initialization
-        return None
-    else:
-        # Pre-filter players_elo_df for teammates in the given season
-        teammate_ids = teammates['player_id'].unique()
-        teammate_elo_df = players_elo_df[(players_elo_df['player_id'].isin(teammate_ids)) &
-                                         (players_elo_df['season'] == season)]
+        @param cur: DB cursor
+        @param game_id: ID of the game to analyze
+        """
+        self.cur = cur
+        self.game_id = game_id
+        self.home_club_id, self.away_club_id = self._fetch_club_ids()
 
-        # Drop rows without an ELO to handle missing values
-        teammate_elos = teammate_elo_df['elo'].dropna()
+        # Lazy-loaded attributes
+        self._club_ratings = None
+        self._goals_per_club = None
+        self._players_play_times = None
+        self._match_impact_players = None
 
-        # Check if enough ELO data exists
-        if len(teammate_elos) >= len(teammate_ids) / 2:
-            # More than half of teammates have ELOs, so return their average
-            return teammate_elos.mean()
-        else:
-            # Not enough data, use market value instead
-            return None
+    def _fetch_club_ids(self) -> Tuple[int, int]:
+        """
+        Retrieve the home and away club IDs for the game.
 
+        @return: Tuple[int, int]: Home and away club IDs
+        """
+        self.cur.execute("""
+            SELECT g.home_club_id, g.away_club_id
+            FROM games g
+            WHERE g.game_id = %s
+        """, (self.game_id,))
+        return self.cur.fetchone()
 
-def init_player_elo_with_player_value(player_valuations_df: pd.DataFrame, players_elo_df: pd.DataFrame, player_id,
-                                      season, base_elo=BASE_ELO, elo_range=ELO_RANGE, season_valuations=None):
-    """
-    Initialize a player's ELO based on their market value for a given season.
-    @param players_elo_df:
-    @param player_valuations_df:
-    @param player_id: The ID of the player.
-    @param season: The season to calculate the ELO for.
-    """
-    # TODO: Later, to optimize, we can do sth like calculate z-score of all players by season
-    # So that we don't have to repeat the process?
-    # Get the player's market value for the specific season
-    if season_valuations is None or season not in season_valuations:
-        print("Season Valuation not valid, or not in a season")
-        print(season_valuations)
-        print(season)
-        return base_elo  # handle cases where season stats are unavailable
-    season_mean = season_valuations[season]['mean']
-    season_std = season_valuations[season]['std']
-    # Convert season in the dataframe to the same type as the variable `season`
-    player_valuations_df['season'] = player_valuations_df['season'].astype(type(season))
+    @property
+    def club_ratings(self) -> Dict[int, float]:
+        """
+        Lazy load the club ratings for each team.
 
-    # Now perform the query
-    player_value = player_valuations_df.loc[(player_valuations_df['player_id'] == player_id) &
-                                            (player_valuations_df['season'] == season), 'market_value_in_eur']
+        @return: Dict[int, float]: Dictionary mapping each club ID to its average ELO rating
+        """
+        if self._club_ratings is None:
+            self._club_ratings = self._calculate_club_ratings()
+        return self._club_ratings
 
-    if player_value.empty:
-        # No market value available for this player in the given season, returning a base ELO
-        print('No player market value found, returning a base ELO')
-        return base_elo
-    else:
-        # Get market values for all players in the season to normalize
-        # season_values = player_valuations_df.loc[
-        #     player_valuations_df['season'] == season, 'market_value_in_eur'].dropna()
-        # season_values_log = np.log1p(season_values)  # Log transformation
+    def _calculate_club_ratings(self) -> Dict[int, float]:
+        """
+        Calculate the average ELO rating for each team based on player participation.
 
-        # Calculate the z-score for the player's market value
-        # print(f"Market Value of player: {player_value.values[0]}")
-        # print(f"Avg market value of players: {season_mean}")
-        # print(f"Std dev. of players: {season_std}")
+        @return: Dict[int, float]: Dictionary of club rating for each club
+        """
+        self.cur.execute("""
+            SELECT a.player_club_id, a.minutes_played, e.elo
+            FROM appearances a
+            JOIN players_elo e ON a.player_id = e.player_id
+            WHERE a.game_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
+        """, (self.game_id,))
 
-        # Calculate z-scores and cap them to prevent extreme ELOs
-        # Compute the z-score using precomputed season stats
-        player_z_score = (np.log1p(player_value.values[0]) - season_mean) / season_std
-        # NOTE: Cap the z-score to prevent maximum ELOs
-        # TODO: Think of better approach
-        # e.g.) Ronaldo in 2015 gives ELO of 4800, Messi in 2012 gives ELO of 5400, which is not ideal
-        # This doens't really work as well...
+        total_rating = {self.home_club_id: 0, self.away_club_id: 0}
+        total_playtime = {self.home_club_id: 0, self.away_club_id: 0}
+        for club_id, minutes_played, elo in self.cur.fetchall():
+            total_rating[club_id] += minutes_played * elo
+            total_playtime[club_id] += minutes_played
 
-        # Calculate the player's ELO based on their z-score
-        player_elo = base_elo + (player_z_score * (elo_range / 2))
-        print(f"Player ELO: {player_elo}")
-        return player_elo
-
-
-def init_player_elo(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame, player_id,
-                    game_id, season_valuations):
-    """
-    Init player's elo of player id, at game_id
-    @param player_id:
-    @param game_id:
-    @return:
-    """
-    # 1. Get player's club (at that time)
-    player_appearance = appearances_df.loc[(appearances_df['game_id'] == game_id) \
-                                           & (appearances_df['player_id'] == player_id)]
-    if player_appearance.empty:
-        # Error: No such player
-        raise ValueError("No result found for player {} in game {}".format(player_id, game_id))
-    club = player_appearance['player_club_id']
-
-    # 2. and check if we have enough elo data of that club
-    elo_value = is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, player_id, game_id)
-    # season = games_df.loc[games_df['game_id'] == game_id]['season']
-    season = games_df.loc[games_df['game_id'] == game_id, 'season'].iloc[0]
-    if elo_value is None:
-        # We need to manually calculate elo_value based on his market value of taht time
-        # print(season)
-        print("Init with player market value")
-        elo_value = init_player_elo_with_player_value(player_valuations_df, players_elo_df, player_id, season,
-                                                      season_valuations=season_valuations)
-
-    print(f"Elo value {elo_value} for player {player_id}")
-    # 3. Now set player elo of that time
-    players_elo_df.loc[(players_elo_df['player_id'] == player_id) \
-                       & (players_elo_df['season'] == season), 'elo'] = elo_value
-    # NOTE: We can also add feature like looking up player's elo of prev / next season.
-    # Note, that, since we chronologically loop through games, his teammate's elo will be elo of that time!
-    # However, be careful finding out which club he was playing for at THAT time.
-    # return
-
-
-def get_player_elo(players_df: pd.DataFrame, player_id, game_id):
-    """
-    Get player {player_id} elo, and if elo is not initialised, it will initialise the player's elo.
-    @param player_id: player's id
-    @return: player['elo'], integer
-    """
-    player: pd.DataFrame = players_df.loc[players_df['player_id'] == player_id]
-    # If there is multiple....
-    if len(player) > 1:
-        raise ValueError(f"Multiple results found for player {player_id}. Expected only one")
-    elif len(player) == 0:
-        raise ValueError(f"No results found for player {player_id}")
-
-    # Nothing went wrong
-    elo_value = player.get('elo')
-    if elo_value is not None:
-        # Elo value exists, do something with it
-        print(f"Elo value exists for player {player_id}!")
-        return player['elo']
-    else:
-        # Handle the case where 'elo' column doesn't exist or is empty
-        # print("Player DataFrame doesn't have an 'elo' column or values are empty")
-        print(f"Empty elo_value for player {player_id}, initialising.")
-        return init_player_elo(player_id, game_id)
-
-
-def test_is_enough_data(appearances_df: pd.DataFrame, games_df: pd.DataFrame, players_elo_df: pd.DataFrame,
-                        player_id, game_id):
-    print(is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, player_id, game_id))
-
-
-def test_init_player_elo_with_market_value():
-    # Now Testing
-    sample_player_names = {'Lionel Messi': '2015', 'Ronaldo': '2015', 'Federico Valverde': '2020', 'Eric Dier': '2015', \
-                           'Nacho Fernández': '2020'}
-    # seasons = ['2015', '2015', '2020', '2020', '2020']
-    # ronaldo = players_df.loc[players_df['name'].str.contains('Lionel Messi')]
-    ronaldo = players_df.loc[players_df['name'].str.contains('Ronaldo')]
-    # ronaldo = players_df.loc[players_df['name'].str.contains('Federico Valverde')]
-    # ronaldo = players_df.loc[players_df['name'].str.contains('Eric Dier')]
-    # ronaldo = players_df.loc[players_df['name'].str.contains('Nacho Fernández')]
-    # season = '2020'
-    season = '2015'
-    ronaldo_id = ronaldo['player_id'].values[0]
-    ronaldo_games = appearances_df.loc[appearances_df['player_id'] == ronaldo_id]
-    print(ronaldo)
-    # print(ronaldo_games)
-    # res = is_enough_data_to_init_elo(appearances_df, games_df, players_elo_df, ronaldo_id,
-    #                                  ronaldo_games['game_id'].values[0])
-    # if res is None:
-    #     print("Not enough data of teammates to init ronlaod's elo based on them!")
-    # else:
-    #     print("We have enough data???")
-    for player_name, season in sample_player_names.items():
-        player = players_df.loc[players_df['name'].str.contains(player_name)]
-        player_id = player['player_id'].values[0]
-        ronaldo_games = appearances_df.loc[appearances_df['player_id'] == player_id]
-        print(f"Player {player['name'].values[0]} info.")
-        init_player_elo_with_player_value(player_valuations_df, players_elo_df, player_id, season \
-                                          , season_valuations=season_valuations)
-
-
-def main():
-    """
-    Main fn.
-    """
-    # Define all DataFrames globally as empty initially
-    global competitions_df, appearances_df, player_valuations_df, game_events_df
-    global players_df, games_df, club_games_df, clubs_df, players_elo_df
-
-    # Initialize each as empty DataFrame
-    competitions_df = pd.DataFrame()
-    appearances_df = pd.DataFrame()
-    player_valuations_df = pd.DataFrame()
-    game_events_df = pd.DataFrame()
-    players_df = pd.DataFrame()
-    games_df = pd.DataFrame()
-    club_games_df = pd.DataFrame()
-    clubs_df = pd.DataFrame()
-    players_elo_df = pd.DataFrame()
-
-    # Import CSV data
-    dataframes = import_data_from_csv()  # Load dataframes from CSVs
-
-    # Map your predefined variables to their respective keys in the dictionary
-    variable_mapping = {
-        'competitions_df': 'competitions',
-        'appearances_df': 'appearances',
-        'player_valuations_df': 'player_valuations',
-        'game_events_df': 'game_events',
-        'players_df': 'players',
-        'games_df': 'games',
-        'club_games_df': 'club_games',
-        'clubs_df': 'clubs',
-        'players_elo_df': 'players_elo'
-    }
-
-    # Update each predefined variable with its corresponding data from the dictionary
-    for var_name, file_name in variable_mapping.items():
-        if file_name in dataframes:
-            globals()[var_name] = dataframes[file_name].copy()
-
-    # for file_name, dataframe in dataframes.items():
-    #     exec(f"{file_name} = dataframe.copy()")
-    #     # print(file_name)
-    #     # print(dataframe)
-    #
-    # dataframes = import_data_from_csv()  # Load dataframes from CSVs
-    #
-    # # Map your predefined variables to their respective keys in the dictionary
-    # variable_mapping = {
-    #     'competitions_df': 'competitions',
-    #     'appearances_df': 'appearances',
-    #     'player_valuations_df': 'player_valuations',
-    #     'game_events_df': 'game_events',
-    #     'players_df': 'players',
-    #     'games_df': 'games',
-    #     'club_games_df': 'club_games',
-    #     'clubs_df': 'clubs',
-    #     'players_elo_df': 'players_elo'
-    # }
-    #
-    # # Update each predefined variable with its corresponding data from the dictionary
-    # for var_name, file_name in variable_mapping.items():
-    #     globals()[var_name] = dataframes.get(file_name, pd.DataFrame()).copy()
-
-    # print(games_df)
-    games_df = sort_df_by_date(games_df)
-    games_df = add_season_column(games_df)
-    player_valuations_df = add_season_column(player_valuations_df)
-
-    players_elo_df = init_players_elo_df(players_df, player_valuations_df)
-    # Calculate season_valuations
-    season_valuations = {}
-    for season in player_valuations_df['season'].unique():
-        season_values = player_valuations_df.loc[
-            player_valuations_df['season'] == season, 'market_value_in_eur'].dropna()
-        season_values_log = np.log1p(season_values)
-        season = np.int64(season)
-        season_valuations[season] = {
-            'mean': season_values_log.mean(),
-            'std': season_values_log.std()
+        return {
+            club_id: total_rating[club_id] / total_playtime[club_id]
+            for club_id in (self.home_club_id, self.away_club_id) if total_playtime[club_id] > 0
         }
 
-    for index, row in appearances_df.sample(n=10).iterrows():
-        player_id = row['player_id']
-        game_id = row['game_id']
-        init_player_elo(appearances_df, games_df, players_elo_df, player_id, game_id, season_valuations)
+    @property
+    def goals_per_club(self) -> ClubGoals:
+        """
+        Lazy load the goals scored by each club in the game.
 
-        print("##############################")
-    print("DONE")
-    #
-    # sample_df = appearances_df.head(10)
-    # for index, col in sample_df.iterrows():
-    #     print(get_player_elo(col['player_id'], col['game_id']))
+        @return: ClubGoals: Dictionary mapping each club ID to a list of goal-scoring minutes
+        """
+        if self._goals_per_club is None:
+            self._goals_per_club = self._fetch_goals_per_club()
+        return self._goals_per_club
+
+    def _fetch_goals_per_club(self) -> ClubGoals:
+        """
+        Retrieve goals scored by each club in the game.
+
+        @return: ClubGoals: Dictionary mapping each club ID to a list of goal-scoring minutes
+        """
+        self.cur.execute("""
+            SELECT club_id, minute
+            FROM game_events
+            WHERE type = 'Goals' AND game_id = %s
+        """, (self.game_id,))
+
+        goals_by_club = {}
+        for club_id, minute in self.cur.fetchall():
+            goals_by_club.setdefault(club_id, []).append(minute)
+        return goals_by_club
+
+    @property
+    def players_play_times(self) -> PlayersPlayTimes:
+        """
+        Lazy load the playing time for each player in the game.
+
+        @return: PlayersPlayTimes: Dictionary mapping (club_id, player_id) to (start_min, end_min)
+        """
+        if self._players_play_times is None:
+            self._players_play_times = self._fetch_players_play_times()
+        return self._players_play_times
+
+    def _fetch_players_play_times(self) -> PlayersPlayTimes:
+        """
+        Retrieve playing times for each player in the game.
+
+        @return: PlayersPlayTimes: Dictionary mapping (club_id, player_id) to (start_min, end_min)
+        """
+        # Starting players
+        self.cur.execute("""
+            SELECT player_club_id AS club_id, player_id, minutes_played
+            FROM appearances
+            WHERE game_id = %s
+        """, (self.game_id,))
+
+        starting_players = {}
+        for club_id, player_id, minutes_played in self.cur.fetchall():
+            end_time = minutes_played if minutes_played > 0 else self.FULL_GAME_MINUTES
+            starting_players[(club_id, player_id)] = (0, end_time)
+
+        # Substituted players
+        self.cur.execute("""
+            SELECT club_id, player_id, player_in_id, minute
+            FROM game_events
+            WHERE type = 'Substitutions' AND game_id = %s
+        """, (self.game_id,))
+
+        play_time = starting_players.copy()
+        for club_id, player_id, player_in_id, minute in self.cur.fetchall():
+            if (club_id, player_id) in play_time:
+                play_time[(club_id, player_id)] = (play_time[(club_id, player_id)][0], minute)
+            play_time[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
+        return play_time
+
+    @property
+    def match_impact_players(self) -> MatchImpacts:
+        """
+        Lazy load the match impact for each player in the game.
+
+        @return: MatchImpacts: Dictionary mapping (club_id, player_id) to match impact
+        """
+        if self._match_impact_players is None:
+            self._match_impact_players = self._calculate_match_impact_players()
+        return self._match_impact_players
+
+    def _calculate_match_impact_players(self) -> MatchImpacts:
+        """
+        Calculate the match impact of all players who participated in this game.
+
+        @note 'Match Impact': Goal difference while player was on the pitch.
+        @return: MatchImpacts: Dictionary mapping (club_id, player_id) to match impact
+        """
+        goal_minutes = self.goals_per_club
+        play_times = self.players_play_times
+        player_goal_impacts = {}
+
+        for (club_id, player_id), (start_time, end_time) in play_times.items():
+            goals_scored = sum(1 for minute in goal_minutes.get(club_id, []) if start_time <= minute <= end_time)
+            goals_conceded = sum(1 for opp_club_id, opp_minutes in goal_minutes.items()
+                                 if opp_club_id != club_id and any(
+                start_time <= minute <= end_time for minute in opp_minutes))
+            player_goal_impacts[(club_id, player_id)] = goals_scored - goals_conceded
+        return player_goal_impacts
+
+    def analyze_team_performance(self):
+        """
+        Example function to analyze overall team performance.
+
+        @return: Dict[int, Dict[str, int]]: Team performance metrics based on goals and ratings
+        """
+        # TODO: Finish this
+        performance = {
+            club_id: {
+                "rating": self.club_ratings[club_id],
+                "goals_scored": len(self.goals_per_club.get(club_id, []))
+            } for club_id in self.club_ratings
+        }
+        return performance
+
+class PlayerAnalytics:
+    """
+    Analyse single player (Player ID)'s performance in a single game (Game ID)
+    """
+
+    def __init__(self, game_analysis: GameAnalysis, player_id: int):
+        """
+        Init.
+
+        @param game_analysis: Game Analysis Class (Analyse entire game, treating club as a single entity)
+        @param player_id: ID of a player to analyse
+        """
+        self.game_analysis = game_analysis  # Reference to shared GameAnalysis instance
+        self.player_id = player_id
+
+        # Lazy Loaded attr.
+        self.club_id, self.opponent_club_id = self._fetch_club_ids()
+        self._player_elo = None
+        self._player_expectation = None
+        self._playing_time = None
+
+    def _fetch_club_ids(self) -> Tuple[int, int]:
+        """
+        Fetch and store the player's club ID and the opponent club ID for this game.
+
+        @return Tuple[int, int]: Player's club ID and opponent's club ID.
+        """
+        # Fetch the player's club ID from appearances
+        self.game_analysis.cur.execute("""
+            SELECT player_club_id
+            FROM appearances
+            WHERE game_id = %s AND player_id = %s
+        """, (self.game_analysis.game_id, self.player_id))
+
+        result = self.game_analysis.cur.fetchone()
+        if result:
+            club_id = result[0]
+            # Determine opponent club ID
+            opponent_club_id = (
+                self.game_analysis.home_club_id if club_id == self.game_analysis.away_club_id
+                else self.game_analysis.away_club_id
+            )
+            return club_id, opponent_club_id
+        else:
+            raise ValueError(f"Player with ID {self.player_id} not found in game {self.game_analysis.game_id}")
+
+    def _fetch_player_elo(self) -> float:
+        self.game_analysis.cur.execute("""
+                    SELECT e.elo
+                    FROM players_elo e
+                    JOIN appearances a ON e.player_id = a.player_id
+                    WHERE a.game_id = %s AND e.player_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
+                """, (self.game_analysis.game_id, self.player_id))
+
+        elo = self.game_analysis.cur.fetchone()[0]
+        return float(elo)
+
+    def _fetch_player_playing_time(self) -> Optional[Tuple[int, int]]:
+        """Calculate playing time for a specific player in the game."""
+        (start_min, end_min) = self.game_analysis.players_play_times[(self.club_id, self.player_id)]
+        # Add
+        if start_min is None or end_min is None:
+            raise ValueError(f"Player with ID {self.player_id} and Club ID {self.club_id} is not "
+                             f"in game {self.game_analysis.game_id}!")
+        return start_min, end_min
+
+    @property
+    def player_elo(self) -> float:
+        """
+        Lazy load player elo
+
+        @return: float: Player elo of the season when game GameID was played
+        """
+
+        if self._player_elo is None:
+            self._player_elo = self._fetch_player_elo()
+        return self._player_elo
+
+    @property
+    def playing_time(self) -> Optional[Tuple[int, int]]:
+        """
+        Get Playing time
+        @return: (start_min, end_min)
+        """
+        if self._playing_time is None:
+            self._playing_time = self._fetch_player_playing_time()
+        return self._playing_time
+
+    @property
+    def player_expectation(self) -> float:
+        """
+        Get E_A_i (Indiv. Expectation)
+        @return:float:  Player Expectation
+        """
+        if self._player_expectation is None:
+            self._player_expectation = self._calculate_player_expectation()
+        return self._player_expectation
+
+    def _calculate_player_expectation(self) -> float:
+        """
+        Calculate E_A_i (Indiv. Expectation)
+        @return: float:  Player Expectation in this game
+        """
+
+        try:
+            opponent_rating = self.game_analysis.club_ratings[self.opponent_club_id]
+        except KeyError:
+            raise ValueError(
+                f"Opponent club rating for club ID {self.opponent_club_id} not found in game {self.game_analysis.game_id}")
 
 
-if __name__ == "__main__":
-    main()
+        mod = (opponent_rating - self.player_elo) / 400
+        return 1 / (1 + pow(10, mod))
+
+
+
+
+# Usage
+with DatabaseConnection(DATABASE_CONFIG) as conn:
+    with conn.cursor() as cur:
+        # Initialize game-level analysis
+        game_analysis = GameAnalysis(cur, game_id=3079452)
+
+        # Analyze overall team performance
+        team_performance = game_analysis.analyze_team_performance()
+        print("Team Performance:", team_performance)
+
+        # Individual player analysis based on shared game data
+        player_analytics = PlayerAnalytics(game_analysis, player_id=20506)
+        playing_time = player_analytics.playing_time
+        print(f"Player {player_analytics.player_id} Playing Time:", playing_time)
+
+        expectation = player_analytics.player_expectation
+        print(f"Player {player_analytics.player_id} Expectation:", expectation)
