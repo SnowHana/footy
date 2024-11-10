@@ -251,177 +251,172 @@ class GameAnalysis(ELOCalculationMixin):
             } for club_id in self.club_ratings
         }
         return performance
-
-
-class PlayerAnalysis(ELOCalculationMixin):
-    """
-    Analyse single player (Player ID)'s performance in a single game (Game ID)
-    """
-
-    def __init__(self, game_analysis: GameAnalysis, player_id: int):
-        """
-        Init.
-
-        @param game_analysis: Game Analysis Class (Analyse entire game, treating club as a single entity)
-        @param player_id: ID of a player to analyse
-        """
-        self.game_analysis = game_analysis  # Reference to shared GameAnalysis instance
-        self.player_id = player_id
-
-        # Lazy Loaded attr.
-        self.club_id, self.opponent_club_id = self._fetch_club_ids()
-        self._player_elo = None
-        self._player_expectation = None
-        self._playing_time = None
-        self._match_impact = None
-        self._game_score = None
-
-    def _fetch_club_ids(self) -> Tuple[int, int]:
-        """
-        Fetch and store the player's club ID and the opponent club ID for this game.
-
-        @return Tuple[int, int]: Player's club ID and opponent's club ID.
-        """
-        # Fetch the player's club ID from appearances
-        self.game_analysis.cur.execute("""
-            SELECT player_club_id
-            FROM appearances
-            WHERE game_id = %s AND player_id = %s
-        """, (self.game_analysis.game_id, self.player_id))
-
-        result = self.game_analysis.cur.fetchone()
-        if result:
-            club_id = result[0]
-            # Determine opponent club ID
-            opponent_club_id = (
-                self.game_analysis.home_club_id if club_id == self.game_analysis.away_club_id
-                else self.game_analysis.away_club_id
-            )
-            return club_id, opponent_club_id
-        else:
-            raise ValueError(f"Player with ID {self.player_id} not found in game {self.game_analysis.game_id}")
-
-    def _fetch_player_elo(self) -> float:
-        self.game_analysis.cur.execute("""
-                    SELECT e.elo
-                    FROM players_elo e
-                    JOIN appearances a ON e.player_id = a.player_id
-                    WHERE a.game_id = %s AND e.player_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
-                """, (self.game_analysis.game_id, self.player_id))
-
-        elo = self.game_analysis.cur.fetchone()[0]
-        return float(elo)
-
-    def _fetch_player_playing_time(self) -> Optional[Tuple[int, int]]:
-        """Calculate playing time for a specific player in the game."""
-        (start_min, end_min) = self.game_analysis.players_play_times[(self.club_id, self.player_id)]
-        # Add
-        if start_min is None or end_min is None:
-            raise ValueError(f"Player with ID {self.player_id} and Club ID {self.club_id} is not "
-                             f"in game {self.game_analysis.game_id}!")
-        return start_min, end_min
-
-    def _calculate_player_expectation(self) -> float:
-        """
-        Calculate E_A_i (Indiv. Expectation)
-        @return: float:  Player Expectation in this game
-        """
-
-        try:
-            opponent_rating = self.game_analysis.club_ratings[self.opponent_club_id]
-        except KeyError:
-            raise ValueError(
-                f"Opponent club rating for club ID {self.opponent_club_id} not found in game {self.game_analysis.game_id}")
-
-        mod = (opponent_rating - self.player_elo) / 400
-        return 1 / (1 + pow(10, mod))
-
-    def _calculate_game_score(self) -> float:
-        """
-        Calculate Game Score S_A_i
-        @note: We assumed D_A_i (G.D when A_i was playing) == Match Impact. But this can change later
-        @return: float: Game Score of Player A_i (S_A_i)
-        """
-        # Get match impact (or g.d.)
-        # match_impact = self.game_analysis.match_impact_players[(self.club_id, self.player_id)]
-
-        game_score = 0
-        # Assume match_impact == Goal Diff atm
-        # if self.match_impact > 0:
-        #     game_score = 1
-        # elif self.match_impact == 0:
-        #     game_score = 0.5
-        # else:
-        #     game_score = 0
-        super().calculate_game_score(self, self.player_id)
-        return float(game_score)
-
-    def _fetch_match_impact(self) -> int:
-        """
-
-        @return:
-        """
-        match_impact = self.game_analysis.match_impact_players[(self.club_id, self.player_id)]
-        return match_impact
-
-    @property
-    def match_impact(self) -> int:
-        """
-
-        @return:
-        """
-        if self._match_impact is None:
-            self._match_impact = self._fetch_match_impact()
-        return self._match_impact
-
-    # def _calculate_change(self) -> float:
-
-    @property
-    def game_score(self) -> int:
-        """
-        Game Score S_A_i (Indiv. Score)
-        """
-
-        if self._game_score is None:
-            self._game_score = self._calculate_game_score()
-        return self._game_score
-
-    @property
-    def player_elo(self) -> float:
-        """
-        Lazy load player elo
-
-        @return: float: Player elo of the season when game GameID was played
-        """
-
-        if self._player_elo is None:
-            self._player_elo = self._fetch_player_elo()
-        return self._player_elo
-
-    @property
-    def playing_time(self) -> Optional[Tuple[int, int]]:
-        """
-        Get Playing time
-        @return: (start_min, end_min)
-        """
-        if self._playing_time is None:
-            self._playing_time = self._fetch_player_playing_time()
-        return self._playing_time
-
-    @property
-    def player_expectation(self) -> float:
-        """
-        Get E_A_i (Indiv. Expectation)
-        @return:float:  Player Expectation
-        """
-        if self._player_expectation is None:
-            self._player_expectation = self._calculate_player_expectation()
-        return self._player_expectation
-
-class ClubAnalysis(BaseAnalysis):
-
-    def __init__(self, game_analysis: GameAnalysis, club_id: int):
-        super().__init__(game_analysis, entity_id=club_id, is_club=True)
+#
+#
+# class PlayerAnalysis(ELOCalculationMixin):
+#     """
+#     Analyse single player (Player ID)'s performance in a single game (Game ID)
+#     """
+#
+#     def __init__(self, game_analysis: GameAnalysis, player_id: int):
+#         """
+#         Init.
+#
+#         @param game_analysis: Game Analysis Class (Analyse entire game, treating club as a single entity)
+#         @param player_id: ID of a player to analyse
+#         """
+#         self.game_analysis = game_analysis  # Reference to shared GameAnalysis instance
+#         self.player_id = player_id
+#
+#         # Lazy Loaded attr.
+#         self.club_id, self.opponent_club_id = self._fetch_club_ids()
+#         self._player_elo = None
+#         self._player_expectation = None
+#         self._playing_time = None
+#         self._match_impact = None
+#         self._game_score = None
+#
+#     def _fetch_club_ids(self) -> Tuple[int, int]:
+#         """
+#         Fetch and store the player's club ID and the opponent club ID for this game.
+#
+#         @return Tuple[int, int]: Player's club ID and opponent's club ID.
+#         """
+#         # Fetch the player's club ID from appearances
+#         self.game_analysis.cur.execute("""
+#             SELECT player_club_id
+#             FROM appearances
+#             WHERE game_id = %s AND player_id = %s
+#         """, (self.game_analysis.game_id, self.player_id))
+#
+#         result = self.game_analysis.cur.fetchone()
+#         if result:
+#             club_id = result[0]
+#             # Determine opponent club ID
+#             opponent_club_id = (
+#                 self.game_analysis.home_club_id if club_id == self.game_analysis.away_club_id
+#                 else self.game_analysis.away_club_id
+#             )
+#             return club_id, opponent_club_id
+#         else:
+#             raise ValueError(f"Player with ID {self.player_id} not found in game {self.game_analysis.game_id}")
+#
+#     def _fetch_player_elo(self) -> float:
+#         self.game_analysis.cur.execute("""
+#                     SELECT e.elo
+#                     FROM players_elo e
+#                     JOIN appearances a ON e.player_id = a.player_id
+#                     WHERE a.game_id = %s AND e.player_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
+#                 """, (self.game_analysis.game_id, self.player_id))
+#
+#         elo = self.game_analysis.cur.fetchone()[0]
+#         return float(elo)
+#
+#     def _fetch_player_playing_time(self) -> Optional[Tuple[int, int]]:
+#         """Calculate playing time for a specific player in the game."""
+#         (start_min, end_min) = self.game_analysis.players_play_times[(self.club_id, self.player_id)]
+#         # Add
+#         if start_min is None or end_min is None:
+#             raise ValueError(f"Player with ID {self.player_id} and Club ID {self.club_id} is not "
+#                              f"in game {self.game_analysis.game_id}!")
+#         return start_min, end_min
+#
+#     def _calculate_player_expectation(self) -> float:
+#         """
+#         Calculate E_A_i (Indiv. Expectation)
+#         @return: float:  Player Expectation in this game
+#         """
+#
+#         try:
+#             opponent_rating = self.game_analysis.club_ratings[self.opponent_club_id]
+#         except KeyError:
+#             raise ValueError(
+#                 f"Opponent club rating for club ID {self.opponent_club_id} not found in game {self.game_analysis.game_id}")
+#
+#         mod = (opponent_rating - self.player_elo) / 400
+#         return 1 / (1 + pow(10, mod))
+#
+#     def _calculate_game_score(self) -> float:
+#         """
+#         Calculate Game Score S_A_i
+#         @note: We assumed D_A_i (G.D when A_i was playing) == Match Impact. But this can change later
+#         @return: float: Game Score of Player A_i (S_A_i)
+#         """
+#         # Get match impact (or g.d.)
+#         # match_impact = self.game_analysis.match_impact_players[(self.club_id, self.player_id)]
+#
+#         game_score = 0
+#         # Assume match_impact == Goal Diff atm
+#         # if self.match_impact > 0:
+#         #     game_score = 1
+#         # elif self.match_impact == 0:
+#         #     game_score = 0.5
+#         # else:
+#         #     game_score = 0
+#         super().calculate_game_score(self, self.player_id)
+#         return float(game_score)
+#
+#     def _fetch_match_impact(self) -> int:
+#         """
+#
+#         @return:
+#         """
+#         match_impact = self.game_analysis.match_impact_players[(self.club_id, self.player_id)]
+#         return match_impact
+#
+#     @property
+#     def match_impact(self) -> int:
+#         """
+#
+#         @return:
+#         """
+#         if self._match_impact is None:
+#             self._match_impact = self._fetch_match_impact()
+#         return self._match_impact
+#
+#     # def _calculate_change(self) -> float:
+#
+#     @property
+#     def game_score(self) -> int:
+#         """
+#         Game Score S_A_i (Indiv. Score)
+#         """
+#
+#         if self._game_score is None:
+#             self._game_score = self._calculate_game_score()
+#         return self._game_score
+#
+#     @property
+#     def player_elo(self) -> float:
+#         """
+#         Lazy load player elo
+#
+#         @return: float: Player elo of the season when game GameID was played
+#         """
+#
+#         if self._player_elo is None:
+#             self._player_elo = self._fetch_player_elo()
+#         return self._player_elo
+#
+#     @property
+#     def playing_time(self) -> Optional[Tuple[int, int]]:
+#         """
+#         Get Playing time
+#         @return: (start_min, end_min)
+#         """
+#         if self._playing_time is None:
+#             self._playing_time = self._fetch_player_playing_time()
+#         return self._playing_time
+#
+#     @property
+#     def player_expectation(self) -> float:
+#         """
+#         Get E_A_i (Indiv. Expectation)
+#         @return:float:  Player Expectation
+#         """
+#         if self._player_expectation is None:
+#             self._player_expectation = self._calculate_player_expectation()
+#         return self._player_expectation
 
 
 # Usage
