@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, inspect
 import pandas as pd
 import psycopg
 from typing import Dict, List, Tuple, Optional, Union
-
+from .elo_calculation_mixin import ELOCalculationMixin
 # Typing
 ClubGoals = Dict[int, List[int]]
 PlayersPlayTimes = Dict[Tuple[int, int], Tuple[int, int]]
