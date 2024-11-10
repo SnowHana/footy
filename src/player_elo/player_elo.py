@@ -35,9 +35,6 @@ class DatabaseConnection:
         if self.conn:
             self.conn.close()
 
-
-
-#
 class GameAnalysis(ELOCalculationMixin):
     """
     Analysis of a Single Game. Doesn't focus on a single player,
@@ -349,13 +346,13 @@ class PlayerAnalysis(ELOCalculationMixin):
 
         game_score = 0
         # Assume match_impact == Goal Diff atm
-        if self.match_impact > 0:
-            game_score = 1
-        elif self.match_impact == 0:
-            game_score = 0.5
-        else:
-            game_score = 0
-
+        # if self.match_impact > 0:
+        #     game_score = 1
+        # elif self.match_impact == 0:
+        #     game_score = 0.5
+        # else:
+        #     game_score = 0
+        super().calculate_game_score(self, self.player_id)
         return float(game_score)
 
     def _fetch_match_impact(self) -> int:

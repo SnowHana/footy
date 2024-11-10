@@ -11,7 +11,7 @@ class ELOCalculationMixin:
     """
 
     @staticmethod
-    def calculate_game_score(analysis: Union[GameAnalysis, PlayerAnalysis], id: Union[int, (int, int)]) -> float:
+    def calculate_game_score(analysis: Union[GameAnalysis, PlayerAnalysis]) -> float:
         """
         Calculate Game Score based on match impact (goal difference).
         @param analysis: Game Analysis / Player Analytics
@@ -23,14 +23,14 @@ class ELOCalculationMixin:
 
         if isinstance(analysis, GameAnalysis):
             # Game Analysis
-            club_id = id
-            opponent_id = analysis.home_club_id if id == analysis.away_club_id else analysis.away_club_id
+            # club_id = id
+            # opponent_id = analysis.home_club_id if id == analysis.away_club_id else analysis.away_club_id
 
-            club_goals = analysis.goals_per_club[club_id]
-            opponent_goals = analysis.goals_per_club[opponent_id]
+            home_goals = analysis.goals_per_club[analysis.home_club_id]
+            away_goals = analysis.goals_per_club[analysis.away_club_id]
 
             # Calculating club
-            gd = len(club_goals) - len(opponent_goals)
+            gd = len(home_goals) - len(away_goals)
             match_impact = gd
 
         elif isinstance(analysis, PlayerAnalysis):
