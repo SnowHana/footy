@@ -1,38 +1,12 @@
 import json
 from typing import Dict, List, Tuple
+from .database_connection import DatabaseConnection, DATABASE_CONFIG
 
-import psycopg
 
 # Typing
 ClubGoals = Dict[int, List[int]]
 PlayersPlayTimes = Dict[Tuple[int, int], Tuple[int, int]]
 MatchImpacts = Dict[Tuple[int, int], int]
-
-DATABASE_CONFIG = {
-    'dbname': 'football',
-    'user': 'postgres',
-    'password': '1234',
-    'host': 'localhost',
-    'port': '5432'
-}
-
-
-class DatabaseConnection:
-    """
-    Set up connection with PostgreSQL database
-    """
-
-    def __init__(self, config: Dict[str, str]):
-        self.config = config
-        self.conn = None
-
-    def __enter__(self):
-        self.conn = psycopg.connect(**self.config)
-        return self.conn
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.conn:
-            self.conn.close()
 
 
 class GameAnalysis:
