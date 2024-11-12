@@ -1,10 +1,8 @@
+import json
+from typing import Dict, List, Tuple
 
-from sqlalchemy import create_engine, inspect
-import pandas as pd
 import psycopg
-from typing import Dict, List, Tuple, Optional, Union
-from .elo_calculation_mixin import ELOCalculationMixin
-from .base_analysis import BaseAnalysis
+
 # Typing
 ClubGoals = Dict[int, List[int]]
 PlayersPlayTimes = Dict[Tuple[int, int], Tuple[int, int]]
@@ -36,22 +34,26 @@ class DatabaseConnection:
         if self.conn:
             self.conn.close()
 
+
 class GameAnalysis:
     """
-    Analysis of a Single Game. Doesn't focus on a single player,
-    but contains information about the game so that it can further be used
-    in PlayerAnalysis class
-    """
+        Analysis of a single Game (Game ID), including team ratings, player performance, and goal impact.
 
+        Attributes:
+            cur: Database cursor for executing SQL queries.
+            game_id: ID of the game being analyzed.
+            weight: Weight assigned to this game for analysis (default 1).
+    """
     FULL_GAME_MINUTES = 90
 
-    def __init__(self, cur, game_id: int, weight: float):
+    def __init__(self, cur, game_id: int, weight: float = 1):
         """
-        Initialize.
+        @summary: Analysis of a single Game (Game ID)
+        @param: :cur: DB Cursor
+        @param: int: game_id : game ID
+        @param: float: weight : Weight of the game Game ID, default 1
+        """
 
-        @param cur: DB cursor
-        @param game_id: ID of the game to analyze
-        """
         self.cur = cur
         self.game_id = game_id
         self.weight = weight
@@ -62,6 +64,8 @@ class GameAnalysis:
         self._goals_per_club = None
         self._players_play_times = None
         self._match_impact_players = None
+
+        # TODO: Not sure if this field belongs here...
         self._club_elo_change = None
 
     def _fetch_club_ids(self) -> Tuple[int, int]:
@@ -77,22 +81,11 @@ class GameAnalysis:
         """, (self.game_id,))
         return self.cur.fetchone()
 
-    @property
-    def club_ratings(self) -> Dict[int, float]:
-        """
-        Lazy load the club ratings for each team.
-
-        @return: Dict[int, float]: Dictionary mapping each club ID to its average ELO rating
-        """
-        if self._club_ratings is None:
-            self._club_ratings = self._calculate_club_ratings()
-        return self._club_ratings
-
     def _calculate_club_ratings(self) -> Dict[int, float]:
         """
         Calculate the average ELO rating for each team based on player participation.
 
-        @return: Dict[int, float]: Dictionary of club rating for each club
+        @return: Dict[int, float]: Dictionary of club rating for each club [clubID, avgClubELO]
         """
         self.cur.execute("""
             SELECT a.player_club_id, a.minutes_played, e.elo
@@ -112,22 +105,11 @@ class GameAnalysis:
             for club_id in (self.home_club_id, self.away_club_id) if total_playtime[club_id] > 0
         }
 
-    @property
-    def goals_per_club(self) -> ClubGoals:
-        """
-        Lazy load the goals scored by each club in the game.
-
-        @return: ClubGoals: Dictionary mapping each club ID to a list of goal-scoring minutes
-        """
-        if self._goals_per_club is None:
-            self._goals_per_club = self._fetch_goals_per_club()
-        return self._goals_per_club
-
     def _fetch_goals_per_club(self) -> ClubGoals:
         """
         Retrieve goals scored by each club in the game.
 
-        @return: ClubGoals: Dictionary mapping each club ID to a list of goal-scoring minutes
+        @return: ClubGoals: Dictionary mapping each club ID to a list of goal-scoring minutes  {ClubID: [Goals]}
         """
         self.cur.execute("""
             SELECT club_id, minute
@@ -139,17 +121,6 @@ class GameAnalysis:
         for club_id, minute in self.cur.fetchall():
             goals_by_club.setdefault(club_id, []).append(minute)
         return goals_by_club
-
-    @property
-    def players_play_times(self) -> PlayersPlayTimes:
-        """
-        Lazy load the playing time for each player in the game.
-
-        @return: PlayersPlayTimes: Dictionary mapping (club_id, player_id) to (start_min, end_min)
-        """
-        if self._players_play_times is None:
-            self._players_play_times = self._fetch_players_play_times()
-        return self._players_play_times
 
     def _fetch_players_play_times(self) -> PlayersPlayTimes:
         """
@@ -176,12 +147,46 @@ class GameAnalysis:
             WHERE type = 'Substitutions' AND game_id = %s
         """, (self.game_id,))
 
+        # Create dictionary.
         play_time = starting_players.copy()
         for club_id, player_id, player_in_id, minute in self.cur.fetchall():
             if (club_id, player_id) in play_time:
                 play_time[(club_id, player_id)] = (play_time[(club_id, player_id)][0], minute)
             play_time[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
         return play_time
+
+    @property
+    def club_ratings(self) -> Dict[int, float]:
+        """
+        Lazy load the club ratings for each team.
+
+        @return: Dict[int, float]: Dictionary mapping each club ID to its average ELO rating
+        """
+        if self._club_ratings is None:
+            self._club_ratings = self._calculate_club_ratings()
+        return self._club_ratings
+
+    @property
+    def goals_per_club(self) -> ClubGoals:
+        """
+        Lazy load the goals scored by each club in the game.
+
+        @return: ClubGoals: Dictionary mapping each club ID to a list of goal-scoring minutes
+        """
+        if self._goals_per_club is None:
+            self._goals_per_club = self._fetch_goals_per_club()
+        return self._goals_per_club
+
+    @property
+    def players_play_times(self) -> PlayersPlayTimes:
+        """
+        Lazy load the playing time for each player in the game.
+
+        @return: PlayersPlayTimes: Dictionary mapping (club_id, player_id) to (start_min, end_min)
+        """
+        if self._players_play_times is None:
+            self._players_play_times = self._fetch_players_play_times()
+        return self._players_play_times
 
     @property
     def match_impact_players(self) -> MatchImpacts:
@@ -213,6 +218,55 @@ class GameAnalysis:
             player_goal_impacts[(club_id, player_id)] = goals_scored - goals_conceded
         return player_goal_impacts
 
+    def summary(self) -> Dict[str, any]:
+        """
+        Generate a summary of key attributes and properties for easy viewing during testing.
+
+        @return: Dictionary summarizing the GameAnalysis instance.
+        """
+        return {
+            "game_id": self.game_id,
+            "home_club_id": self.home_club_id,
+            "away_club_id": self.away_club_id,
+            "club_ratings": self.club_ratings,
+            "goals_per_club": self.goals_per_club,
+            "players_play_times": self.players_play_times,
+            "match_impact_players": self.match_impact_players
+        }
+
+    def print_summary(self):
+        """
+        Print a formatted summary of key attributes and properties for easy testing and debugging.
+        """
+        summary = self.summary()
+        for key, value in summary.items():
+            print(f"{key}: {value}")
+
+    def save_summary_to_json(self, filename: str = "game_analysis_summary.json"):
+        """
+        Save a summary of key attributes and properties to a JSON file for easy viewing.
+
+        @param filename: The name of the JSON file to save the summary.
+        """
+        summary = self.summary()
+        with open(filename, 'w') as file:
+            json.dump(summary, file, indent=4)
+        print(f"Summary saved to {filename}")
+    # def analyze_team_performance(self):
+    #     """
+    #     Example function to analyze overall team performance.
+    #
+    #     @return: Dict[int, Dict[str, int]]: Team performance metrics based on goals and ratings
+    #     """
+    #     # TODO: Finish this
+    #     performance = {
+    #         club_id: {
+    #             "rating": self.club_ratings[club_id],
+    #             "goals_scored": len(self.goals_per_club.get(club_id, []))
+    #         } for club_id in self.club_ratings
+    #     }
+    #     return performance
+
     # @property
     # def club_elo_change(self) -> Dict[int, float]:
     #     if self._club_elo_change is None:
@@ -237,35 +291,24 @@ class GameAnalysis:
     #
     #     # {self.home_club_id: len(home_club_goals), self.away_club_id: len(away_club_goals)}
 
-    def analyze_team_performance(self):
-        """
-        Example function to analyze overall team performance.
-
-        @return: Dict[int, Dict[str, int]]: Team performance metrics based on goals and ratings
-        """
-        # TODO: Finish this
-        performance = {
-            club_id: {
-                "rating": self.club_ratings[club_id],
-                "goals_scored": len(self.goals_per_club.get(club_id, []))
-            } for club_id in self.club_ratings
-        }
-        return performance
 
 # Usage
 with DatabaseConnection(DATABASE_CONFIG) as conn:
     with conn.cursor() as cur:
         # Initialize game-level analysis
         game_analysis = GameAnalysis(cur, game_id=3079452)
-
-        # Analyze overall team performance
-        team_performance = game_analysis.analyze_team_performance()
-        print("Team Performance:", team_performance)
-
-        # Individual player analysis based on shared game data
-        player_analytics = PlayerAnalysis(game_analysis, player_id=20506)
-        playing_time = player_analytics.playing_time
-        print(f"Player {player_analytics.player_id} Playing Time:", playing_time)
-
-        expectation = player_analytics.player_expectation
-        print(f"Player {player_analytics.player_id} Expectation:", expectation)
+        # game_analysis.print_summary()
+        # game_analysis.save_summary_to_json()
+        #
+        # # Analyze overall team performance
+        # team_performance = game_analysis.analyze_team_performance()
+        # print("Team Performance:", team_performance)
+        #
+        # # Individual player analysis based on shared game data
+        # player_analytics = PlayerAnalysis(game_analysis, player_id=20506)
+        # playing_time = player_analytics.playing_time
+        # print(f"Player {player_analytics.player_id} Playing Time:", playing_time)
+        #
+        # expectation = player_analytics.player_expectation
+        # print(f"Player {player_analytics.player_id} Expectation:", expectation)
+        pass
