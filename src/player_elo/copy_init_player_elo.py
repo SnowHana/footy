@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -149,7 +150,8 @@ class PlayerEloInitializer:
         for player_id in self.players_df['player_id'].unique():
             if self.is_enough_data_to_init_elo(player_id):
                 initial_elo = self.calculate_initial_elo(player_id)
-                latest_season = self.player_valuations_df[self.player_valuations_df['player_id'] == player_id]['season'].max()
+                latest_season = self.player_valuations_df[self.player_valuations_df['player_id'] == player_id][
+                    'season'].max()
                 self.update_player_elo(player_id, latest_season, initial_elo)
 
         # Fill season gaps for all players

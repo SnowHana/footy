@@ -1,6 +1,7 @@
 import os
-from pathlib import Path
 import time
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -347,6 +348,8 @@ def _fill_season_gaps(df: pd.DataFrame) -> pd.DataFrame:
     filled_df = filled_df[cols]
 
     return filled_df
+
+
 #
 # def _fill_season_gaps(df: pd.DataFrame) -> pd.DataFrame:
 #     """
@@ -400,8 +403,6 @@ df = pd.read_csv(os.path.join(data_dir, 'players_elo.csv'))
 res = _fill_season_gaps(df)
 data_path = os.path.join(data_dir, 'players_elo_copy.csv')
 res.to_csv(data_path, index=False)
-
-
 
 # initializer = PlayerEloInitializer()
 # players_elo_df = initializer.init_all_players_elo()

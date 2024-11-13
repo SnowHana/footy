@@ -1,6 +1,5 @@
 import numpy as np
-import pandas as pd
-from scipy.stats import zscore
+
 from utils import *
 
 BASE_ELO = 1500
@@ -195,6 +194,7 @@ def get_player_elo(players_df: pd.DataFrame, player_id, game_id):
         # print("Player DataFrame doesn't have an 'elo' column or values are empty")
         # print(f"Empty elo_value for player {player_id}, initialising.")
         return init_player_elo(appearances_df, games_df, players_elo_df, player_id, game_id, season_valuations)
+
 
 #
 # def test_init_player_elo_with_market_value():
