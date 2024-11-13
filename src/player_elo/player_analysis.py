@@ -23,7 +23,7 @@ class PlayerAnalysis(BaseAnalysis):
         return self.game_analysis.cur.fetchone()[0]
 
     def _calculate_expectation(self) -> float:
-        opponent_elo = self.game_analysis.club_ratings[self._get_opponent_club_id()]
+        opponent_elo = self.game_analysis.club_ratings[self.opponent_id]
         return 1 / (1 + pow(10, (opponent_elo - self.elo) / 400))
 
     def _get_goal_difference(self) -> int:
@@ -44,6 +44,17 @@ class PlayerAnalysis(BaseAnalysis):
             """, (self.game_analysis.game_id, self.entity_id))
         return self.game_analysis.cur.fetchone()[0]
 
+    def _get_opponent_id(self) -> int:
+        """
+        Get Opponent Club's ID
+        @todo: Later instead of using player's play time, do sth else, like creating a team data for GameAnalysis?
+        @return:
+        """
+        for club_id, player_id in self.game_analysis.players_play_times.keys():
+            if player_id == self.entity_id:
+                return club_id
+
+
 
 class ClubAnalysis(BaseAnalysis):
 
@@ -54,10 +65,11 @@ class ClubAnalysis(BaseAnalysis):
         return self.game_analysis.club_ratings.get(self.entity_id, 0)
 
     def _calculate_expectation(self) -> float:
-        opponent_id = (
-            self.game_analysis.home_club_id if self.entity_id == self.game_analysis.away_club_id
-            else self.game_analysis.away_club_id)
-        opponent_elo = self.game_analysis.club_ratings[opponent_id]
+        # opponent_id = (
+        #     self.game_analysis.home_club_id if self.entity_id == self.game_analysis.away_club_id
+        #     else self.game_analysis.away_club_id)
+
+        opponent_elo = self.game_analysis.club_ratings[self.opponent_id]
         return 1 / (1 + pow(10, (opponent_elo - self.elo) / 400))
 
     def _get_goal_difference(self) -> int:
@@ -69,6 +81,16 @@ class ClubAnalysis(BaseAnalysis):
 
     def _get_minutes_played(self) -> int:
         return self.game_analysis.FULL_GAME_MINUTES
+
+    def _get_opponent_id(self) -> int:
+        """
+        Get Opponent Club's id
+        """
+        opponent_id = (
+            self.game_analysis.home_club_id if self.entity_id == self.game_analysis.away_club_id
+            else self.game_analysis.away_club_id)
+        return opponent_id
+
 
 
 with DatabaseConnection(DATABASE_CONFIG) as conn:
@@ -84,6 +106,22 @@ with DatabaseConnection(DATABASE_CONFIG) as conn:
         print("Club ELO:", away_club_analysis.elo)
         print("Club Expectation:", home_club_analysis.expectation)
         print("Club Expectation:", away_club_analysis.expectation)
+        print("Club MP", home_club_analysis.minutes_played)
+        print("Club GD", home_club_analysis.goal_difference)
+        print("Club GD", away_club_analysis.goal_difference)
+
+        # Test Player analysis\
+        players = [player for club, player in game_analysis.players_play_times.keys()]
+        player_analysis = PlayerAnalysis(game_analysis, players[5])
+
+        # Testing player analysis
+        print("Player: ", player_analysis.entity_id )
+        print("Player ELO:", player_analysis.elo)
+        print("Player Expectation:", player_analysis.expectation)
+        print("Player MP", player_analysis.minutes_played)
+        print("Player GD", player_analysis.goal_difference)
+
+
         # Update the club's ELO based on actual game score (e.g., actual_score=1.0 if they won)
         # updated_elo = club_analysis.update_elo(actual_score=1.0, weight=0.5)
         # print("Updated Club ELO:", updated_elo)
