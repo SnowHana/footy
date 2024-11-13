@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Union
+
 from .player_elo import PlayerAnalysis, GameAnalysis
 
 
@@ -45,7 +46,6 @@ class ELOCalculationMixin:
         else:
             return 0.0
 
-
     @staticmethod
     def calculate_change(analysis: Union[GameAnalysis, PlayerAnalysis]) -> float:
         """
@@ -59,10 +59,10 @@ class ELOCalculationMixin:
         @param minutes_max: Maximum Minutes (90)
         @return: Calculated change
         """
-        res =  weight * (game_score - expectation)
+        res = weight * (game_score - expectation)
         if goal_difference == 0:
             res *= (minutes_played / minutes_max)
         else:
-            res *= (pow(abs(goal_difference), 1/ 3))
+            res *= (pow(abs(goal_difference), 1 / 3))
 
         return res

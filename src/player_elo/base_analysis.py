@@ -3,7 +3,6 @@ from abc import abstractmethod
 from typing import Dict
 
 from .game_analysis import GameAnalysis
-from .database_connection import DatabaseConnection, DATABASE_CONFIG
 
 
 class BaseAnalysis:
@@ -11,17 +10,27 @@ class BaseAnalysis:
     Base class providing common ELO calculation and expectation methods for both Club and Player analysis.
     @todo: Decide like what exactly this class should do?
     """
+    MINUTES_MAX = 90
 
-    def __init__(self, game_analysis: GameAnalysis, entity_id: int):
+    def __init__(self, game_analysis: GameAnalysis, entity_id: int,
+                 k_value: float, q_value: float,
+                 weight: float = 1):
         """
         Initialize.
 
+        @param k_value:
+        @param q_value:
         @param game_analysis: Instance of GameAnalysis providing game context
         @param entity_id: ID of the entity (club or player) to analyze
         @param is_club: Boolean indicating if the entity is a club (True) or a player (False)
         """
+        self.q_value = q_value
+        self.k_value = k_value
         self.game_analysis = game_analysis
         self.entity_id = entity_id
+        self.weight = weight
+
+        # Lazy Loaded fields
         self._elo = None
         self._minutes_played = None
         self._goal_difference = None
@@ -30,6 +39,7 @@ class BaseAnalysis:
         # Below are values that is being calculated in this fn.
         self._game_score = None
         self._expectation = None
+        # self._elo_change = None
 
     @abstractmethod
     def _fetch_elo(self) -> float:
@@ -97,6 +107,8 @@ class BaseAnalysis:
             self._opponent_id = self._get_opponent_id()
         return self._opponent_id
 
+
+
     def update_elo(self, actual_score: float, weight: float) -> float:
         """
         Update the entity's ELO based on actual performance vs. expected.
@@ -117,40 +129,44 @@ class BaseAnalysis:
     def calculate_game_score(self) -> float:
         """
         Calculate Game Score based on match impact (goal difference).
+        @todo : Think about using goal_difference or sth else
         """
-        # TODO: Not done yet.
-        match_impact = None
 
-        if self.is_club:
-            home_goals = len(self.game_analysis.goals_per_club.get(self.game_analysis.home_club_id, []))
-            away_goals = len(self.game_analysis.goals_per_club.get(self.game_analysis.away_club_id, []))
-            match_impact = home_goals - away_goals
+        # if self.is_club:
+        #     home_goals = len(self.game_analysis.goals_per_club.get(self.game_analysis.home_club_id, []))
+        #     away_goals = len(self.game_analysis.goals_per_club.get(self.game_analysis.away_club_id, []))
+        #     match_impact = home_goals - away_goals
+        #
+        # else:
+        #     # Player
+        #     match_impact = self.game_analysis.match_impact_players()
 
-        else:
-            # Player
-            match_impact = self.game_analysis.match_impact_players()
-
-        if match_impact > 0:
+        if self.goal_difference > 0:
             return 1.0
-        elif match_impact == 0:
+        elif self.goal_difference == 0:
             return 0.5
         else:
             return 0.0
 
-    @staticmethod
-    def calculate_change(expectation: float, game_score: float, weight: float,
-                         goal_difference: int = 0, minutes_played: int = 0,
-                         minutes_max: int = 90) -> float:
+    def calculate_change(self) -> float:
         """
-        @todo NOT DONE YET
+        @todo Done, but need to get tested
         Calculate the change in score.
         """
-        res = weight * (game_score - expectation)
-        if goal_difference == 0:
-            res *= (minutes_played / minutes_max)
+        res = self.weight * (self.game_score - self.expectation)
+        if self.goal_difference == 0:
+            res *= (self.minutes_played / self.MINUTES_MAX)
         else:
-            res *= (abs(goal_difference) ** (1 / 3))
+            res *= (abs(self.goal_difference) ** (1 / 3))
         return res
+
+    @abstractmethod
+    def new_elo(self) -> float:
+        """
+        Calculate R'_{A_i}
+        @return: New ELO based on our algorithm
+        """
+        # new_elo = self.elo + self.k_value * ((self.q_value * ))
 
     def summary(self) -> Dict[str, any]:
         """

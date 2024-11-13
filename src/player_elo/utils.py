@@ -6,6 +6,7 @@ import pandas as pd
 BASE_ELO = 1500
 ELO_RANGE = 300
 
+
 def import_data_from_csv() -> dict:
     """Read data from csv files (prepared by transfermrkt dataset)
 
@@ -81,4 +82,3 @@ def sort_df_by_date(df: pd.DataFrame) -> pd.DataFrame:
     df = df.sort_values(by=["date"])
 
     return df
-

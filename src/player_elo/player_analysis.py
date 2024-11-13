@@ -9,9 +9,16 @@ class PlayerAnalysis(BaseAnalysis):
     """
 
     def __init__(self, game_analysis: GameAnalysis, player_id: int):
-        super().__init__(game_analysis, entity_id=player_id)
+        super().__init__(game_analysis, entity_id=player_id, k_value=1, q_value=1)
         # IDK maybe delete this cuz it's confusing?
         self.player_id = player_id
+        self._club_id = None
+
+    @property
+    def club_id(self) -> int:
+        if self._club_id is None:
+            self._club_id = self._get_club_id()
+        return self._club_id
 
     def _fetch_elo(self) -> float:
         self.game_analysis.cur.execute("""
@@ -54,12 +61,21 @@ class PlayerAnalysis(BaseAnalysis):
             if player_id == self.entity_id:
                 return club_id
 
+    def new_elo(self, team_elo_change: float) -> float:
+        """
+        @param: team_elo_change: Team ELO Change (C_A)
+        @return:
+        """
+
+        return self.elo + self.k_value * ((self.q_value * self.calculate_change())
+                                          + ((1 - self.q_value) * team_elo_change * (
+                        self.minutes_played / self.MINUTES_MAX)))
 
 
 class ClubAnalysis(BaseAnalysis):
 
     def __init__(self, game_analysis: GameAnalysis, club_id: int):
-        super().__init__(game_analysis, entity_id=club_id)
+        super().__init__(game_analysis, entity_id=club_id, k_value=1, q_value=1)
 
     def _fetch_elo(self) -> float:
         return self.game_analysis.club_ratings.get(self.entity_id, 0)
@@ -91,6 +107,12 @@ class ClubAnalysis(BaseAnalysis):
             else self.game_analysis.away_club_id)
         return opponent_id
 
+    def new_elo(self) -> float:
+        """
+        @return:
+        """
+
+        return self.elo + 20 * self.calculate_change()
 
 
 with DatabaseConnection(DATABASE_CONFIG) as conn:
@@ -113,13 +135,14 @@ with DatabaseConnection(DATABASE_CONFIG) as conn:
         # Test Player analysis\
         players = [player for club, player in game_analysis.players_play_times.keys()]
         player_analysis = PlayerAnalysis(game_analysis, players[5])
-
+        club_analysis = ClubAnalysis(game_analysis, player_analysis.club_id)
         # Testing player analysis
-        print("Player: ", player_analysis.entity_id )
-        print("Player ELO:", player_analysis.elo)
+        print("Player: ", player_analysis.entity_id)
         print("Player Expectation:", player_analysis.expectation)
         print("Player MP", player_analysis.minutes_played)
         print("Player GD", player_analysis.goal_difference)
+        print("Player ELO:", player_analysis.elo)
+        print("Player ELO Change", player_analysis.new_elo(club_analysis.calculate_change()))
 
 
         # Update the club's ELO based on actual game score (e.g., actual_score=1.0 if they won)

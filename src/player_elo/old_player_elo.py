@@ -1,7 +1,6 @@
-from sqlalchemy import create_engine, inspect
-import pandas as pd
-import psycopg
 from typing import Dict, List, Tuple
+
+import psycopg
 
 # Database configuration
 DATABASE_CONFIG = {
@@ -72,6 +71,7 @@ def get_players_playing_time(cur, game_id: int) -> Dict[Tuple[int, int], Tuple[i
         play_time[(club_id, player_in_id)] = (minute, FULL_GAME_MINUTES)
 
     return play_time
+
 
 # Calculate match impact for players based on goal differential while on pitch
 def get_match_impact_players(cur, game_id: int) -> Dict[Tuple[int, int], int]:

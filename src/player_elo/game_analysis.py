@@ -1,7 +1,7 @@
 import json
 from typing import Dict, List, Tuple
-from .database_connection import DatabaseConnection, DATABASE_CONFIG
 
+from .database_connection import DatabaseConnection, DATABASE_CONFIG
 
 # Typing
 ClubGoals = Dict[int, List[int]]
@@ -20,7 +20,7 @@ class GameAnalysis:
     """
     FULL_GAME_MINUTES = 90
 
-    def __init__(self, cur, game_id: int, weight: float = 1):
+    def __init__(self, cur, game_id: int, ):
         """
         @summary: Analysis of a single Game (Game ID)
         @param: :cur: DB Cursor
@@ -30,7 +30,7 @@ class GameAnalysis:
 
         self.cur = cur
         self.game_id = game_id
-        self.weight = weight
+
         self.home_club_id, self.away_club_id = self._fetch_club_ids()
 
         # Lazy-loaded attributes
