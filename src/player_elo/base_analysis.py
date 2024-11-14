@@ -107,8 +107,6 @@ class BaseAnalysis:
             self._opponent_id = self._get_opponent_id()
         return self._opponent_id
 
-
-
     def update_elo(self, actual_score: float, weight: float) -> float:
         """
         Update the entity's ELO based on actual performance vs. expected.

@@ -1,12 +1,8 @@
-from sqlalchemy import text
-
 from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
-
 
 # Constants
 BASE_ELO = 1500
 ELO_RANGE = 300
-
 
 
 class PlayersEloReinitialiser:

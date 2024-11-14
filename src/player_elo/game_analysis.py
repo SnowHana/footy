@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Dict, List, Tuple
 
 from .database_connection import DatabaseConnection, DATABASE_CONFIG
@@ -7,6 +8,7 @@ from .database_connection import DatabaseConnection, DATABASE_CONFIG
 ClubGoals = Dict[int, List[int]]
 PlayersPlayTimes = Dict[Tuple[int, int], Tuple[int, int]]
 MatchImpacts = Dict[Tuple[int, int], int]
+Players = Dict[int, List[int]]
 
 
 class GameAnalysis:
@@ -38,9 +40,17 @@ class GameAnalysis:
         self._goals_per_club = None
         self._players_play_times = None
         self._match_impact_players = None
+        self._date = None
+        self._season = None
+
+        # Players
+        self._players = None
 
         # TODO: Not sure if this field belongs here...
         self._club_elo_change = None
+
+        # Load club ratings
+        self.club_ratings
 
     def _fetch_club_ids(self) -> Tuple[int, int]:
         """
@@ -129,6 +139,58 @@ class GameAnalysis:
             play_time[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
         return play_time
 
+    def _fetch_players(self) -> Players:
+        """
+
+        @return: {club_id : [player_id, player_id, player_id...]
+        """
+
+        self.cur.execute("""
+                    SELECT player_club_id AS club_id, player_id
+                    FROM appearances
+                    WHERE game_id = %s
+                """, (self.game_id,))
+
+        players = {}
+        for club_id, player_id in self.cur.fetchall():
+            players.get(club_id, []).append(player_id)
+
+        # Substituted players
+        self.cur.execute("""
+                    SELECT club_id, player_in_id
+                    FROM game_events
+                    WHERE type = 'Substitutions' AND game_id = %s
+                """, (self.game_id,))
+
+        # Create dictionary.
+        for club_id, player_in_id, minute in self.cur.fetchall():
+            players.get(club_id, []).append(player_in_id)
+        return players
+
+    def _fetch_date(self) -> datetime:
+        self.cur.execute("""
+        SELECT date
+        FROM games
+        WHERE game_id = %s
+        """, (self.game_id, ))
+
+        date = self.cur.fetchone()[0]
+        date_obj = datetime.strptime(date, "%Y-%m-%d")
+
+        return date_obj
+
+    @property
+    def date(self) -> datetime:
+        if self._date is None:
+            self._date = self._fetch_date()
+        return self._date
+
+    @property
+    def season(self) -> int:
+        if self._season is None:
+            self._season = self.date.year
+        return self._season
+
     @property
     def club_ratings(self) -> Dict[int, float]:
         """
@@ -172,6 +234,16 @@ class GameAnalysis:
         if self._match_impact_players is None:
             self._match_impact_players = self._calculate_match_impact_players()
         return self._match_impact_players
+
+    @property
+    def players(self) -> Players:
+        """
+
+        @return Players: Dictionary mapping (club_id) to List[player_id]
+        """
+        if self._players is None:
+            self._players = self._fetch_players()
+        return self._players
 
     def _calculate_match_impact_players(self) -> MatchImpacts:
         """
@@ -264,25 +336,25 @@ class GameAnalysis:
     #     self.
     #
     #     # {self.home_club_id: len(home_club_goals), self.away_club_id: len(away_club_goals)}
-
-
-# Usage
-with DatabaseConnection(DATABASE_CONFIG) as conn:
-    with conn.cursor() as cur:
-        # Initialize game-level analysis
-        game_analysis = GameAnalysis(cur, game_id=3079452)
-        # game_analysis.print_summary()
-        # game_analysis.save_summary_to_json()
-        #
-        # # Analyze overall team performance
-        # team_performance = game_analysis.analyze_team_performance()
-        # print("Team Performance:", team_performance)
-        #
-        # # Individual player analysis based on shared game data
-        # player_analytics = PlayerAnalysis(game_analysis, player_id=20506)
-        # playing_time = player_analytics.playing_time
-        # print(f"Player {player_analytics.player_id} Playing Time:", playing_time)
-        #
-        # expectation = player_analytics.player_expectation
-        # print(f"Player {player_analytics.player_id} Expectation:", expectation)
-        pass
+#
+#
+# # Usage
+# with DatabaseConnection(DATABASE_CONFIG) as conn:
+#     with conn.cursor() as cur:
+#         # Initialize game-level analysis
+#         game_analysis = GameAnalysis(cur, game_id=3079452)
+#         # game_analysis.print_summary()
+#         # game_analysis.save_summary_to_json()
+#         #
+#         # # Analyze overall team performance
+#         # team_performance = game_analysis.analyze_team_performance()
+#         # print("Team Performance:", team_performance)
+#         #
+#         # # Individual player analysis based on shared game data
+#         # player_analytics = PlayerAnalysis(game_analysis, player_id=20506)
+#         # playing_time = player_analytics.playing_time
+#         # print(f"Player {player_analytics.player_id} Playing Time:", playing_time)
+#         #
+#         # expectation = player_analytics.player_expectation
+#         # print(f"Player {player_analytics.player_id} Expectation:", expectation)
+#         pass
