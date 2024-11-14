@@ -59,6 +59,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/src/data/transfer_data/club_games.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/src/data/transfer_data/clubs.csv">
           <value>
             <Attribute>
