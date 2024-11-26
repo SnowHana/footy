@@ -1,3 +1,5 @@
+import logging
+
 from src.player_elo.base_analysis import BaseAnalysis
 from src.player_elo.club_analysis import ClubAnalysis
 from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
@@ -22,12 +24,14 @@ class PlayerAnalysis(BaseAnalysis):
         return self._club_id
 
     def _fetch_elo(self) -> float:
-        self.game_analysis.cur.execute("""
-                        SELECT e.elo
-                        FROM players_elo e
-                        JOIN appearances a ON e.player_id = a.player_id
-                        WHERE a.game_id = %s AND e.player_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
-                    """, (self.game_analysis.game_id, self.entity_id))
+        # self.game_analysis.cur.execute("""
+        #                 SELECT e.elo
+        #                 FROM players_elo e
+        #                 JOIN appearances a ON e.player_id = a.player_id
+        #                 WHERE a.game_id = %s AND e.player_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
+        #             """, (self.game_analysis.game_id, self.entity_id))
+        # TODO: Make this use game_analysis elo attr instead of querying
+        # Because there are tooooooo many empty info in appearances table
         return self.game_analysis.cur.fetchone()[0]
 
     def _calculate_expectation(self) -> float:
@@ -45,12 +49,20 @@ class PlayerAnalysis(BaseAnalysis):
         """
         Retrieve the club ID for the player.
         """
-        self.game_analysis.cur.execute("""
-                SELECT player_club_id
-                FROM appearances
-                WHERE game_id = %s AND player_id = %s
-            """, (self.game_analysis.game_id, self.entity_id))
-        return self.game_analysis.cur.fetchone()[0]
+        # self.game_analysis.cur.execute("""
+        #         SELECT player_club_id
+        #         FROM appearances
+        #         WHERE game_id = %s AND player_id = %s
+        #     """, (self.game_analysis.game_id, self.entity_id))
+        # return self.game_analysis.cur.fetchone()[0]
+        try:
+            for club_id, club_players in self.game_analysis.players.items():
+                if self.entity_id in club_players:
+                    return club_id
+            raise KeyError(f"Error: Could not find Player {self.entity_id} in game {self.game_analysis.game_id}")
+        except KeyError as e:
+            logging.error(e)
+            raise
 
     def _get_opponent_id(self) -> int:
         """
