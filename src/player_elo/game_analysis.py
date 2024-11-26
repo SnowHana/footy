@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from typing import Dict, List, Tuple
 
-from .database_connection import DatabaseConnection, DATABASE_CONFIG
+from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
 
 # Typing
 ClubGoals = Dict[int, List[int]]
@@ -35,6 +35,12 @@ class GameAnalysis:
 
         self.home_club_id, self.away_club_id = self._fetch_club_ids()
 
+        # Players
+        self._players = None
+
+        # Elos
+        self._elos = None
+
         # Lazy-loaded attributes
         self._club_ratings = None
         self._goals_per_club = None
@@ -43,14 +49,11 @@ class GameAnalysis:
         self._date = None
         self._season = None
 
-        # Players
-        self._players = None
-
         # TODO: Not sure if this field belongs here...
         self._club_elo_change = None
 
         # Load club ratings
-        self.club_ratings
+        # self.club_ratings
 
     def _fetch_club_ids(self) -> Tuple[int, int]:
         """
@@ -71,18 +74,32 @@ class GameAnalysis:
 
         @return: Dict[int, float]: Dictionary of club rating for each club [clubID, avgClubELO]
         """
-        self.cur.execute("""
-            SELECT a.player_club_id, a.minutes_played, e.elo
-            FROM appearances a
-            JOIN players_elo e ON a.player_id = e.player_id
-            WHERE a.game_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
-        """, (self.game_id,))
-
         total_rating = {self.home_club_id: 0, self.away_club_id: 0}
         total_playtime = {self.home_club_id: 0, self.away_club_id: 0}
-        for club_id, minutes_played, elo in self.cur.fetchall():
-            total_rating[club_id] += minutes_played * elo
-            total_playtime[club_id] += minutes_played
+
+        # TODO: Think of a behaviour when this returns nothing?
+        # TODO: So error is happenign because of missing data in appearances table. We can use players field instead?
+
+        # self.cur.execute("""
+        #     SELECT a.player_club_id, a.minutes_played, e.elo
+        #     FROM appearances a
+        #     JOIN players_elo e ON a.player_id = e.player_id
+        #     WHERE a.game_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
+        # """, (self.game_id,))
+
+        rows = self.cur.fetchall()
+        # if not rows:
+        #     # Query is empty which means
+        # for club_id, minutes_played, elo in rows:
+        for club_id in [self.home_club_id, self.away_club_id]:
+            # Find each player
+            players = self.players[club_id]
+            for player_id in players:
+                start, end = self.players_play_times[(club_id, player_id)]
+                minutes_played = abs(end - start)
+                elo = self.elos[player_id]
+                total_rating[club_id] += minutes_played * elo
+                total_playtime[club_id] += minutes_played
 
         return {
             club_id: total_rating[club_id] / total_playtime[club_id]
@@ -153,7 +170,7 @@ class GameAnalysis:
 
         players = {}
         for club_id, player_id in self.cur.fetchall():
-            players.get(club_id, []).append(player_id)
+            players.setdefault(club_id, []).append(player_id)
 
         # Substituted players
         self.cur.execute("""
@@ -163,8 +180,8 @@ class GameAnalysis:
                 """, (self.game_id,))
 
         # Create dictionary.
-        for club_id, player_in_id, minute in self.cur.fetchall():
-            players.get(club_id, []).append(player_in_id)
+        for club_id, player_in_id in self.cur.fetchall():
+            players.setdefault(club_id, []).append(player_in_id)
         return players
 
     def _fetch_date(self) -> datetime:
@@ -172,12 +189,29 @@ class GameAnalysis:
         SELECT date
         FROM games
         WHERE game_id = %s
-        """, (self.game_id, ))
+        """, (self.game_id,))
 
         date = self.cur.fetchone()[0]
         date_obj = datetime.strptime(date, "%Y-%m-%d")
 
         return date_obj
+
+    def _fetch_elos(self) -> Dict[int, float]:
+        """
+        Fetch elos based on player id, season
+        @return: Dict[player_ID, elo] (of that season)
+        """
+        elos = {}
+        for club, players in self.players.items():
+            for player in players:
+                self.cur.execute(f"""
+                SELECT elo FROM players_elo WHERE player_id = {player} AND season = {self.season};
+                """)
+                res = self.cur.fetchone()
+                elos[player] = res[0] if res else None
+
+        print(elos)
+        return elos
 
     @property
     def date(self) -> datetime:
@@ -245,6 +279,16 @@ class GameAnalysis:
             self._players = self._fetch_players()
         return self._players
 
+    @property
+    def elos(self) -> Dict[int, float]:
+        """
+        Return Elos
+        @return: Dict[player_ID : int, elo: float (of that specific season)]
+        """
+        if self._elos is None:
+            self._elos = self._fetch_elos()
+        return self._elos
+
     def _calculate_match_impact_players(self) -> MatchImpacts:
         """
         Calculate the match impact of all players who participated in this game.
@@ -277,7 +321,9 @@ class GameAnalysis:
             "club_ratings": self.club_ratings,
             "goals_per_club": self.goals_per_club,
             "players_play_times": self.players_play_times,
-            "match_impact_players": self.match_impact_players
+            "match_impact_players": self.match_impact_players,
+            'players': self.players,
+            'elos': self.elos,
         }
 
     def print_summary(self):
@@ -336,14 +382,18 @@ class GameAnalysis:
     #     self.
     #
     #     # {self.home_club_id: len(home_club_goals), self.away_club_id: len(away_club_goals)}
+
+
 #
 #
 # # Usage
-# with DatabaseConnection(DATABASE_CONFIG) as conn:
-#     with conn.cursor() as cur:
-#         # Initialize game-level analysis
-#         game_analysis = GameAnalysis(cur, game_id=3079452)
-#         # game_analysis.print_summary()
+
+with DatabaseConnection(DATABASE_CONFIG) as conn:
+    with conn.cursor() as cur:
+        # Initialize game-level analysis
+        game_analysis = GameAnalysis(cur, game_id=2246172)
+        game_analysis.print_summary()
+        # game_analysis.print_summary()
 #         # game_analysis.save_summary_to_json()
 #         #
 #         # # Analyze overall team performance

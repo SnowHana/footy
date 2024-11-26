@@ -10,17 +10,39 @@ class EloUpdater:
     def __init__(self, cur):
         self.cur = cur
 
+    def is_game_data_valid(self, game_id):
+        """Check if game data is valid"""
+        # Get player data from Appearances Table
+        appearances_data = {}
+        self.cur.execute(f"SELECT player_club_id, player_id FROM appearances WHERE game_id = {game_id};")
+        for club_id, player_id in self.cur.fetchall():
+            appearances_data.get(club_id, []).append(player_id)
+
+        # Now, get players data from appearances + game events table
+        game_analysis = GameAnalysis(self.cur, game_id=game_id)
+
+        if game_analysis.players != appearances_data:
+            return False
+        else:
+            return True
+
+
+
+
     def update_elo_for_all_games(self):
         """Iterate through games to analyze and update ELOs for players and clubs."""
         # with self.conn.cursor() as cur:
-        self.cur.execute("SELECT game_id FROM games ORDER BY date;")
+        # self.cur.execute("SELECT game_id FROM games ORDER BY date;")
+        self.cur.execute("SELECT game_id FROM games WHERE game_id = 2246172 ORDER BY date;")
         game_ids = self.cur.fetchall()
 
         for index, (game_id,) in enumerate(game_ids, start=1):
-            self.update_elo_for_game(game_id)
+            if self.is_game_data_valid(game_id):
+                print(f"Game {game_id} is a valid game.")
+                self.update_elo_for_game(game_id)
 
             # Display progress information every 100,000 games
-            if index % 100000 == 0:
+            if index % 10000 == 0:
                 print(f"Processed {index} games so far...")
 
 
@@ -29,6 +51,7 @@ class EloUpdater:
         """Update ELO for a single game."""
         # Initialize game analysis
         game_analysis = GameAnalysis(self.cur, game_id=game_id)
+        # TODO: Check club ratings field is correctly initialised for Gameanalysis class
 
         # Initialize Club Analysis for both clubs
         home_club_analysis = ClubAnalysis(game_analysis, game_analysis.home_club_id)
