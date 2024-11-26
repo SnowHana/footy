@@ -71,7 +71,7 @@ class GameAnalysis:
         """
         self.cur.execute("""
             SELECT g.home_club_id, g.away_club_id
-            FROM games g
+            FROM valid_games g
             WHERE g.game_id = %s
         """, (self.game_id,))
         result = self.cur.fetchone()
@@ -208,7 +208,7 @@ class GameAnalysis:
         """
         self.cur.execute("""
             SELECT date
-            FROM games
+            FROM valid_games
             WHERE game_id = %s
         """, (self.game_id,))
         result = self.cur.fetchone()
@@ -232,6 +232,25 @@ class GameAnalysis:
                 res = self.cur.fetchone()
                 elos[player] = res[0] if res else self.DEFUALT_ELO
         return elos
+
+    def _fetch_match_impact_players(self) -> MatchImpacts:
+        """
+            Calculate the match impact of all players who participated in this game.
+
+            @note 'Match Impact': Goal difference while player was on the pitch.
+            @return: MatchImpacts: Dictionary mapping (club_id, player_id) to match impact
+        """
+        goal_minutes = self.goals_per_club
+        play_times = self.players_play_times
+        player_goal_impacts = {}
+
+        for (club_id, player_id), (start_time, end_time) in play_times.items():
+            goals_scored = sum(1 for minute in goal_minutes.get(club_id, []) if start_time <= minute <= end_time)
+            goals_conceded = sum(1 for opp_club_id, opp_minutes in goal_minutes.items()
+                                 if opp_club_id != club_id and any(
+                start_time <= minute <= end_time for minute in opp_minutes))
+            player_goal_impacts[(club_id, player_id)] = goals_scored - goals_conceded
+        return player_goal_impacts
 
     @property
     def date(self) -> datetime:
@@ -275,6 +294,12 @@ class GameAnalysis:
             self._elos = self._fetch_elos()
         return self._elos
 
+    @property
+    def match_impact_players(self):
+        if self._match_impact_players is None:
+            self._match_impact_players = self._fetch_match_impact_players()
+        return self._match_impact_players
+
     def summary(self) -> Dict[str, any]:
         """
         Generate a summary of key attributes and properties.
@@ -312,6 +337,7 @@ class GameAnalysis:
         with open(filename, 'w') as file:
             json.dump(summary, file, indent=4)
         print(f"Summary saved to {filename}")
+
 #
 #
 # with DatabaseConnection(DATABASE_CONFIG) as conn:
