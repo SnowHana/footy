@@ -4,14 +4,19 @@ from src.player_elo.game_analysis import GameAnalysis
 from src.player_elo.player_analysis import PlayerAnalysis
 
 
-class EloUpdater:
-    """Class for updating ELOs based on game data."""
+class ValidGamePicker:
+    """Class choosing only valid games"""
 
     def __init__(self, cur):
         self.cur = cur
 
-    def is_game_data_valid(self, game_id):
-        """Check if game data is valid"""
+    def is_appearance_include_all_players(self, game_id):
+        """
+        Check if appearance table includes ALL players
+        ie) Appearance table is actually same?
+        @param game_id:
+        @return:
+        """
         # Get player data from Appearances Table
         appearances_data = {}
         self.cur.execute(f"SELECT player_club_id, player_id FROM appearances WHERE game_id = {game_id};")
@@ -21,12 +26,54 @@ class EloUpdater:
         # Now, get players data from appearances + game events table
         game_analysis = GameAnalysis(self.cur, game_id=game_id)
 
-        if game_analysis.players != appearances_data:
-            return False
-        else:
-            return True
+        return game_analysis.players == appearances_data
+
+    def is_appearance_exists(self, game_id):
+        """
+        Checks if record of game exists in appearacne table at all.
+        EX) Try game ID 2246172. It exists in Games Table, but no record in appearances table.
+        @param game_id:
+        @return:
+        """
+        self.cur.execute(f"SELECT * FROM appearances WHERE game_id = {game_id};")
+        return self.cur.fetchone() is not None
+
+    def add_valid_games(self, game_id):
+        # Ensure the `valid_games` table exists
+        self.cur.execute("""
+                    CREATE TABLE IF NOT EXISTS valid_games AS
+                    SELECT * FROM games WHERE 1 = 0;  -- Copy structure but no data
+                """)
+
+        # Fetch all game IDs from the games table
+        self.cur.execute("SELECT * FROM games;")
+        games = self.cur.fetchall()
+
+        for game in games:
+            game_id = game[0]  # Assuming the first column is `game_id`
+
+            if not self.is_appearance_exists(game_id):
+                print(f"Skipping game_id={game_id}: No record in appearances table.")
+                continue
+
+            if not self.is_appearance_include_all_players(game_id):
+                print(f"Skipping game_id={game_id}: Not all players included in appearances.")
+                continue
+
+            # If the game is valid, insert it into the `valid_games` table
+            self.cur.execute("""
+                        INSERT INTO valid_games SELECT * FROM games WHERE game_id = %s
+                        ON CONFLICT (game_id) DO NOTHING;
+                    """, (game_id,))
+
+            print(f"Added game_id={game_id} to valid_games table.")
 
 
+class EloUpdater:
+    """Class for updating ELOs based on game data."""
+
+    def __init__(self, cur):
+        self.cur = cur
 
 
     def update_elo_for_all_games(self):
@@ -37,15 +84,13 @@ class EloUpdater:
         game_ids = self.cur.fetchall()
 
         for index, (game_id,) in enumerate(game_ids, start=1):
-            if self.is_game_data_valid(game_id):
-                print(f"Game {game_id} is a valid game.")
-                self.update_elo_for_game(game_id)
+            # if self.is_game_data_valid(game_id):
+            #     print(f"Game {game_id} is a valid game.")
+            #     self.update_elo_for_game(game_id)
 
             # Display progress information every 100,000 games
             if index % 10000 == 0:
                 print(f"Processed {index} games so far...")
-
-
 
     def update_elo_for_game(self, game_id):
         """Update ELO for a single game."""
@@ -71,11 +116,12 @@ class EloUpdater:
         for player_id in players:
             player_analysis = PlayerAnalysis(game_analysis, player_id)
             team_change = new_home_club_elo if player_analysis.club_id == game_analysis.home_club_id \
-                                            else new_away_club_elo
+                else new_away_club_elo
             new_player_elo = player_analysis.new_elo(team_change)
 
             # Update player ELO in the database
             self._update_player_elo(player_id, game_analysis.season, new_player_elo)
+
     #
     # def _update_club_elo(self, club_id, new_elo):
     #     """Helper function to update club ELO."""
