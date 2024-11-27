@@ -62,7 +62,7 @@ class EloUpdater:
             # Clean up resources
         self.cur.close()
         self.cur.connection.close()
-        os.exit  # Force exit after saving progress
+        os.kill(os.getpid(), signal.SIGINT) # Force exit after saving progress
 
     def update_elo_for_all_games(self):
         """Iterate through games to analyze and update ELOs for players and clubs."""
