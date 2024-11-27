@@ -109,10 +109,11 @@ class GameAnalysis:
                 # Check player exist in ELO
                 if player_id not in self.elos:
                     raise ValueError(f"Warning: No player found from ELO with player ID {player_id}.")
-                elo = self.elos.get(player_id, 0.0)
+                # player_elo = self.elos.get(player_id, 0.0)
+                player_elo = self.elos[player_id]
 
                 # Calculate
-                total_rating[club_id] += minutes_played * elo
+                total_rating[club_id] += minutes_played * player_elo
                 total_playtime[club_id] += minutes_played
 
         return {
@@ -230,7 +231,16 @@ class GameAnalysis:
                     SELECT elo FROM players_elo WHERE player_id = %s AND season = %s
                 """, (player, self.season))
                 res = self.cur.fetchone()
-                elos[player] = res[0] if res else self.DEFUALT_ELO
+                if res:
+                    # Handle case when we have a matching row, but row contains no data (ie. None)
+                    if res[0] is not None:
+                        elos[player] = res[0]
+                    else:
+                        elos[player] = self.DEFUALT_ELO
+                else:
+                    # No matching row / res[0] is None
+                    elos[player] = self.DEFUALT_ELO
+                # elos[player] = res[0] if res else self.DEFUALT_ELO
         return elos
 
     def _fetch_match_impact_players(self) -> MatchImpacts:

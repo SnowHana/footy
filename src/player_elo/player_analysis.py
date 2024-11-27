@@ -32,7 +32,14 @@ class PlayerAnalysis(BaseAnalysis):
         #             """, (self.game_analysis.game_id, self.entity_id))
         # TODO: Make this use game_analysis elo attr instead of querying
         # Because there are tooooooo many empty info in appearances table
-        return self.game_analysis.cur.fetchone()[0]
+        try:
+            if self.entity_id in self.game_analysis.elos:
+                return self.game_analysis.elos[self.entity_id]
+            raise KeyError(f"Error: Could not find Player {self.entity_id} in Game Analysis ELO record.")
+        except KeyError as e:
+            logging.error(e)
+            raise
+
 
     def _calculate_expectation(self) -> float:
         opponent_elo = self.game_analysis.club_ratings[self.opponent_id]
