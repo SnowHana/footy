@@ -54,9 +54,10 @@ class EloUpdater:
             new_player_elo = player_analysis.new_elo(team_change)
 
             # Print
-            print(f"ELO Change of Player {player_id} : {player_analysis.elo} -> {new_player_elo}")
+            # print(f"ELO Change of Player {player_id} : {player_analysis.elo} -> {new_player_elo}")
             # Update player ELO in the database
-            # self._update_player_elo(player_id, game_analysis.season, new_player_elo)
+            self._update_player_elo(player_id, game_analysis.season, new_player_elo)
+        self.cur.connection.commit()
 
     #
     # def _update_club_elo(self, club_id, new_elo):
@@ -77,6 +78,8 @@ class EloUpdater:
             """,
             (player_id, season, new_elo)
         )
+
+        # self.cur.connection.commit()
 
 
 # Usage
