@@ -106,6 +106,8 @@ class GameAnalysis:
 
                 start, end = self.players_play_times.get((club_id, player_id), (0, 0))
                 minutes_played = abs(end - start)
+                if start == 90:
+                    minutes_played = 1
                 # Check player exist in ELO
                 if player_id not in self.elos:
                     raise ValueError(f"Warning: No player found from ELO with player ID {player_id}.")
@@ -116,10 +118,20 @@ class GameAnalysis:
                 total_rating[club_id] += minutes_played * player_elo
                 total_playtime[club_id] += minutes_played
 
-        return {
-            club_id: total_rating[club_id] / total_playtime[club_id]
-            for club_id in (self.home_club_id, self.away_club_id) if total_playtime[club_id] > 0
-        }
+        club_ratings = {}
+        for club_id in (self.home_club_id, self.away_club_id):
+            if total_playtime[club_id] > 0:
+                club_ratings[club_id] = total_rating[club_id] / total_playtime[club_id]
+            else:
+                # Play time is 0...related to dataset being incomplete. Return defualt ELO?
+                club_ratings[club_id] = self.DEFUALT_ELO
+
+        return club_ratings
+
+        # return {
+        #     club_id: total_rating[club_id] / total_playtime[club_id]
+        #     for club_id in (self.home_club_id, self.away_club_id) if total_playtime[club_id] > 0
+        # }
 
     def _fetch_goals_per_club(self) -> ClubGoals:
         """
