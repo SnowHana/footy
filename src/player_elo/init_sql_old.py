@@ -260,7 +260,6 @@ def create_backup_table(table_name: str, engine):
         """)
         print(f"Backup created for table: {table_name} as {backup_table_name}")
 
-
 def create_process_table(engine):
     with engine.connect() as conn:
         conn.execute(f"""CREATE TABLE IF NOT EXISTS process_progress (
@@ -272,7 +271,6 @@ def create_process_table(engine):
                         VALUES ('elo_update', NULL, NULL)
                         ON CONFLICT (process_name) DO NOTHING;""")
         print(f"Table created")
-
 
 def main():
     # Create all tables
@@ -303,6 +301,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 # Create the table in the database
@@ -604,18 +603,3 @@ if __name__ == "__main__":
 # #     result = conn.execute("SELECT * FROM players_elo LIMIT 5")
 # #     for row in result:
 # #         print(row)
-
-# Add indexes for optimization
-def add_indexes(engine):
-    with engine.connect() as conn:
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_valid_games_date ON valid_games (date);")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_players_player_id ON players (player_id);")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_clubs_club_id ON clubs (club_id);")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_appearances_game_id ON appearances (game_id);")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_players_elo_player_season ON players_elo (player_id, season);")
-
-
-# Main execution with indexing
-if __name__ == "__main__":
-    main()  # Existing main function call
-    add_indexes(engine)  # Add indexes after tables are created and data is populated
