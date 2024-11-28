@@ -91,7 +91,6 @@ class PlayerAnalysis(BaseAnalysis):
                                           + ((1 - self.q_value) * team_elo_change * (
                         self.minutes_played / self.MINUTES_MAX)))
 #
-#
 # with DatabaseConnection(DATABASE_CONFIG) as conn:
 #     with conn.cursor() as cur:
 #         # Initialize game analysis with game ID
