@@ -5,7 +5,7 @@ from src.player_elo.game_analysis import GameAnalysis
 class ClubAnalysis(BaseAnalysis):
 
     def __init__(self, game_analysis: GameAnalysis, club_id: int):
-        super().__init__(game_analysis, entity_id=club_id, k_value=1, q_value=1)
+        super().__init__(game_analysis, entity_id=club_id, k_value=32, q_value=1)
 
     def _fetch_elo(self) -> float:
         return self.game_analysis.club_ratings.get(self.entity_id, 0)

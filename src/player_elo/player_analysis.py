@@ -12,7 +12,7 @@ class PlayerAnalysis(BaseAnalysis):
     """
 
     def __init__(self, game_analysis: GameAnalysis, player_id: int):
-        super().__init__(game_analysis, entity_id=player_id, k_value=1, q_value=1)
+        super().__init__(game_analysis, entity_id=player_id, k_value=32, q_value=1)
         # IDK maybe delete this cuz it's confusing?
         self.player_id = player_id
         self._club_id = None
