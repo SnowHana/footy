@@ -1,0 +1,10 @@
+2024-12-03 13:35:44,867 - INFO - Starting ELO update for 59811 games.
+2024-12-03 13:36:29,383 - INFO - Flushing 1000 player ELO updates to the database.
+2024-12-03 13:36:29,870 - INFO - Flushing 1025 player ELO updates to the database.
+2024-12-03 13:36:30,081 - INFO - Flushing 1033 player ELO updates to the database.
+2024-12-03 13:36:30,278 - INFO - Batch completed. Processed 100 games.
+2024-12-03 13:37:11,619 - INFO - Flushing 1015 player ELO updates to the database.
+2024-12-03 13:37:11,798 - INFO - Flushing 1027 player ELO updates to the database.
+2024-12-03 13:37:11,960 - INFO - Flushing 1027 player ELO updates to the database.
+2024-12-03 13:37:12,083 - INFO - Batch completed. Processed 100 games.
+2024-12-03 13:37:12,084 - INFO - Processed 200 games. Exiting...

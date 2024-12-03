@@ -1,3 +1,5 @@
+from logging.handlers import RotatingFileHandler
+
 from src.player_elo.club_analysis import ClubAnalysis
 from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
 from src.player_elo.game_analysis import GameAnalysis
@@ -107,9 +109,9 @@ class EloUpdater:
                     new_away_club_elo = away_club_analysis.new_elo()
 
                     # Update players' ELO
-                    players = [player for club_players_list in game_analysis.players.values() for player in
-                               club_players_list]
-                    for player_id in players:
+                    # players = [player for club_players_list in game_analysis.players.values() for player in
+                    #            club_players_list]
+                    for player_id in game_analysis.players_list:
                         player_analysis = PlayerAnalysis(game_analysis, player_id)
                         team_change = new_home_club_elo if player_analysis.club_id == game_analysis.home_club_id else new_away_club_elo
                         new_player_elo = player_analysis.new_elo(team_change)
@@ -183,9 +185,14 @@ class EloUpdater:
 
 # Main execution
 if __name__ == "__main__":
+    log_file = "elo_update.log"
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5),
+            logging.StreamHandler()  # Remove this if you don't want logs in the console
+        ]
     )
 
     try:

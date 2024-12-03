@@ -31,6 +31,9 @@ class GameAnalysis:
         self._players = {}
         self._match_impact_players = None
         self._club_ratings = None
+        self._date = None
+        self._season = None
+
         self.cur = cur
         self.game_id = game_id
 
@@ -40,9 +43,25 @@ class GameAnalysis:
     def _fetch_bulk_game_data(self):
         """
         Fetch all game-related data in bulk to minimize the number of queries.
+        The function calls modular helper methods to fetch specific game data such as
+        game details, players and playtimes, goals, and player ELO ratings.
+
+        @return: None
         """
-        # Fetch game details
-        # Home Club ID, Away Club ID, Game Date
+        self._fetch_game_details()
+        self._fetch_players_and_playtimes()
+        self._fetch_goals()
+        self._fetch_player_elos()
+
+    def _fetch_game_details(self):
+        """
+        Fetch game metadata such as home/away club IDs and game date.
+        The method also initializes players and goals dictionaries for further processing.
+
+        @raise ValueError: If no valid game is found for the given game_id.
+        @return: None
+        @raise ValueError: If no valid game is found for the given game_id
+        """
         self.cur.execute("""
             SELECT g.home_club_id, g.away_club_id, g.date
             FROM valid_games g
@@ -50,14 +69,27 @@ class GameAnalysis:
         """, (self.game_id,))
         result = self.cur.fetchone()
         if not result:
-            # ERROR. No such game in valid games table
             raise ValueError(f"No clubs found for game_id={self.game_id}")
         self.home_club_id, self.away_club_id, game_date = result
-        # Change date format and extract year -> Season
+
+        # Some formatting and initialising.
         self._date = datetime.strptime(game_date, "%Y-%m-%d")
         self._season = self._date.year
+        # self._players = {self.home_club_id: [], self.away_club_id: []}
+        # self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
 
-        # Fetch Starting ClubPlayers : players, play times, substitutions, and goals
+    def _fetch_players_and_playtimes(self):
+        """
+        Fetch starting players and their playtimes along with substitutions during the game.
+        The method populates `_players` and `_players_play_times` attributes.
+
+        @return: None
+        """
+        # Init.
+        self._players = {self.home_club_id: [], self.away_club_id: []}
+        self._players_play_times = {}
+
+        # Fetch starting players
         self.cur.execute("""
             SELECT player_club_id AS club_id, player_id, minutes_played
             FROM appearances
@@ -65,7 +97,7 @@ class GameAnalysis:
         """, (self.game_id,))
         players_playtimes_data = self.cur.fetchall()
 
-        # Fetch Sub. ClubPlayers
+        # Fetch substituted players
         self.cur.execute("""
             SELECT club_id, player_id, player_in_id, minute
             FROM game_events
@@ -73,31 +105,33 @@ class GameAnalysis:
         """, (self.game_id,))
         substitutions_data = self.cur.fetchall()
 
-
-
-        # Starting member
+        # Process starting players
+        # self._players_play_times = {}
         for club_id, player_id, minutes_played in players_playtimes_data:
             self._players.setdefault(club_id, []).append(player_id)
             end_time = minutes_played if minutes_played > 0 else self.FULL_GAME_MINUTES
             self._players_play_times[(club_id, player_id)] = (0, end_time)
 
-        # Subbed IN members
+        # Process substituted players
         for club_id, player_id, player_in_id, minute in substitutions_data:
             if (club_id, player_id) in self._players_play_times:
-                # Change end minute for Subbed OUT members
-                self._players_play_times[(club_id, player_id)] = (self._players_play_times[(club_id, player_id)][0], minute)
-            # Subbed IN Members (minutes ~ END)
+                self._players_play_times[(club_id, player_id)] = (
+                self._players_play_times[(club_id, player_id)][0], minute)
             self._players_play_times[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
             self._players.setdefault(club_id, []).append(player_in_id)
 
-        # Process and store data in attributes
-        self._players = {self.home_club_id: [], self.away_club_id: []}
-        self._players_play_times = {}
-        self._elos = {}
-        self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
-        self._players_list = [player for club_players in self.players.values() for player in club_players]
+        # Add players_list field
+        self._players_list = [player for club_players in self._players.values() for player in club_players]
 
-        # Get Goal, minutes
+    def _fetch_goals(self):
+        """
+        Fetch goal events during the game and populate `_goals_per_club`.
+
+        @return: None
+        """
+        # Init.
+        self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
+
         self.cur.execute("""
             SELECT club_id, minute
             FROM game_events
@@ -105,43 +139,149 @@ class GameAnalysis:
         """, (self.game_id,))
         goals_data = self.cur.fetchall()
 
+        for club_id, minute in goals_data:
+            self._goals_per_club.setdefault(club_id, []).append(minute)
 
+    def _fetch_player_elos(self):
+        """
+        Fetch ELO ratings for all players involved in the game.
+        For players with no existing ELO, estimate their ELO based on teammates or use the default ELO.
 
-        # player_ids = [player_id for _, player_id, _ in players_playtimes_data]
-        # player_ids = [player_id for _, player_id, _ in self.players]
-        # TODO: This is where thigns go wrong (It only fetches starting members)
+        @return: None
+        """
+        # self._players_list = [player for club_players in self._players.values() for player in club_players]
+        if not self.players_list:
+            self._elos = {}
+            return
 
-        # Fetch player ELOs in bulk
-        if self.players_list:
-            query = sql.SQL("""
-                SELECT player_id, elo FROM players_elo
-                WHERE player_id IN ({ids}) AND season = %s
-            """).format(ids=sql.SQL(', ').join(sql.Placeholder() * len(self.players_list)))
-            self.cur.execute(query, (*self.players_list, self._season))
-            elos_data = self.cur.fetchall()
-            elos_dict = dict(elos_data)
-        else:
-            elos_dict = {}
+        # Fetch ELOs in bulk
+        query = sql.SQL("""
+            SELECT player_id, elo FROM players_elo
+            WHERE player_id IN ({ids}) AND season = %s
+        """).format(ids=sql.SQL(', ').join(sql.Placeholder() * len(self.players_list)))
+        self.cur.execute(query, (*self.players_list, self.season))
+        elos_data = self.cur.fetchall()
+        elos_dict = dict(elos_data)
 
-        # Fetch ELOs
-        for player_id in self.players_list:
-            elo = elos_dict.get(player_id, None)
+        # Process ELOs
+        self._elos = {}
+        for player_id in self._players_list:
+            elo = elos_dict.get(player_id)
             if elo is not None:
                 self._elos[player_id] = elo
             else:
-                # Estimate ELO from teammates if possible
-                club_id = next((club_id for club_id, players in self._players.items() if player_id in players), None)
+                club_id = next((cid for cid, players in self.players.items() if player_id in players), None)
                 if club_id:
-                    teammate_elos = [self._elos[pid] for pid in self._players[club_id] if pid in self._elos]
-                    if teammate_elos:
-                        self._elos[player_id] = sum(teammate_elos) / len(teammate_elos)
-                    else:
-                        self._elos[player_id] = self.DEFAULT_ELO
+                    teammate_elos = [self._elos[pid] for pid in self.players[club_id] if pid in self._elos]
+                    self._elos[player_id] = sum(teammate_elos) / len(
+                        teammate_elos) if teammate_elos else self.DEFAULT_ELO
                 else:
                     self._elos[player_id] = self.DEFAULT_ELO
 
-        for club_id, minute in goals_data:
-            self._goals_per_club.setdefault(club_id, []).append(minute)
+    # def _fetch_bulk_game_data(self):
+    #     """
+    #     Fetch all game-related data in bulk to minimize the number of queries.
+    #     """
+    #     # Fetch game details
+    #     # Home Club ID, Away Club ID, Game Date
+    #     self.cur.execute("""
+    #         SELECT g.home_club_id, g.away_club_id, g.date
+    #         FROM valid_games g
+    #         WHERE g.game_id = %s
+    #     """, (self.game_id,))
+    #     result = self.cur.fetchone()
+    #     if not result:
+    #         # ERROR. No such game in valid games table
+    #         raise ValueError(f"No clubs found for game_id={self.game_id}")
+    #     self.home_club_id, self.away_club_id, game_date = result
+    #     # Change date format and extract year -> Season
+    #     self._date = datetime.strptime(game_date, "%Y-%m-%d")
+    #     self._season = self._date.year
+    #
+    #     # Fetch Starting ClubPlayers : players, play times, substitutions, and goals
+    #     self.cur.execute("""
+    #         SELECT player_club_id AS club_id, player_id, minutes_played
+    #         FROM appearances
+    #         WHERE game_id = %s
+    #     """, (self.game_id,))
+    #     players_playtimes_data = self.cur.fetchall()
+    #
+    #     # Fetch Sub. ClubPlayers
+    #     self.cur.execute("""
+    #         SELECT club_id, player_id, player_in_id, minute
+    #         FROM game_events
+    #         WHERE type = 'Substitutions' AND game_id = %s
+    #     """, (self.game_id,))
+    #     substitutions_data = self.cur.fetchall()
+    #
+    #
+    #
+    #     # Starting member
+    #     for club_id, player_id, minutes_played in players_playtimes_data:
+    #         self._players.setdefault(club_id, []).append(player_id)
+    #         end_time = minutes_played if minutes_played > 0 else self.FULL_GAME_MINUTES
+    #         self._players_play_times[(club_id, player_id)] = (0, end_time)
+    #
+    #     # Subbed IN members
+    #     for club_id, player_id, player_in_id, minute in substitutions_data:
+    #         if (club_id, player_id) in self._players_play_times:
+    #             # Change end minute for Subbed OUT members
+    #             self._players_play_times[(club_id, player_id)] = (self._players_play_times[(club_id, player_id)][0], minute)
+    #         # Subbed IN Members (minutes ~ END)
+    #         self._players_play_times[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
+    #         self._players.setdefault(club_id, []).append(player_in_id)
+    #
+    #     # Process and store data in attributes
+    #     self._players = {self.home_club_id: [], self.away_club_id: []}
+    #     self._players_play_times = {}
+    #     self._elos = {}
+    #     self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
+    #     self._players_list = [player for club_players in self.players.values() for player in club_players]
+    #
+    #     # Get Goal, minutes
+    #     self.cur.execute("""
+    #         SELECT club_id, minute
+    #         FROM game_events
+    #         WHERE type = 'Goals' AND game_id = %s
+    #     """, (self.game_id,))
+    #     goals_data = self.cur.fetchall()
+    #
+    #
+    #
+    #     # player_ids = [player_id for _, player_id, _ in players_playtimes_data]
+    #     # player_ids = [player_id for _, player_id, _ in self.players]
+
+    #     # Fetch player ELOs in bulk
+    #     if self.players_list:
+    #         query = sql.SQL("""
+    #             SELECT player_id, elo FROM players_elo
+    #             WHERE player_id IN ({ids}) AND season = %s
+    #         """).format(ids=sql.SQL(', ').join(sql.Placeholder() * len(self.players_list)))
+    #         self.cur.execute(query, (*self.players_list, self._season))
+    #         elos_data = self.cur.fetchall()
+    #         elos_dict = dict(elos_data)
+    #     else:
+    #         elos_dict = {}
+    #
+    #     # Fetch ELOs
+    #     for player_id in self.players_list:
+    #         elo = elos_dict.get(player_id, None)
+    #         if elo is not None:
+    #             self._elos[player_id] = elo
+    #         else:
+    #             # Estimate ELO from teammates if possible
+    #             club_id = next((club_id for club_id, players in self._players.items() if player_id in players), None)
+    #             if club_id:
+    #                 teammate_elos = [self._elos[pid] for pid in self._players[club_id] if pid in self._elos]
+    #                 if teammate_elos:
+    #                     self._elos[player_id] = sum(teammate_elos) / len(teammate_elos)
+    #                 else:
+    #                     self._elos[player_id] = self.DEFAULT_ELO
+    #             else:
+    #                 self._elos[player_id] = self.DEFAULT_ELO
+    #
+    #     for club_id, minute in goals_data:
+    #         self._goals_per_club.setdefault(club_id, []).append(minute)
 
     def _fetch_match_impact_players(self) -> MatchImpacts:
         """
