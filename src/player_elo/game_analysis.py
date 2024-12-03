@@ -8,7 +8,7 @@ from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONF
 ClubGoals = Dict[int, List[int]]
 PlayersPlayTimes = Dict[Tuple[int, int], Tuple[int, int]]
 MatchImpacts = Dict[Tuple[int, int], int]
-Players = Dict[int, List[int]]
+ClubPlayers = Dict[int, List[int]]
 
 
 class GameAnalysis:
@@ -27,6 +27,8 @@ class GameAnalysis:
         @param game_id: ID of the game being analyzed.
         @raise ValueError: If no home/away clubs are found for the game.
         """
+        self._players_play_times = {}
+        self._players = {}
         self._match_impact_players = None
         self._club_ratings = None
         self.cur = cur
@@ -55,7 +57,7 @@ class GameAnalysis:
         self._date = datetime.strptime(game_date, "%Y-%m-%d")
         self._season = self._date.year
 
-        # Fetch Starting Players : players, play times, substitutions, and goals
+        # Fetch Starting ClubPlayers : players, play times, substitutions, and goals
         self.cur.execute("""
             SELECT player_club_id AS club_id, player_id, minutes_played
             FROM appearances
@@ -63,7 +65,7 @@ class GameAnalysis:
         """, (self.game_id,))
         players_playtimes_data = self.cur.fetchall()
 
-        # Fetch Sub. Players
+        # Fetch Sub. ClubPlayers
         self.cur.execute("""
             SELECT club_id, player_id, player_in_id, minute
             FROM game_events
@@ -71,32 +73,7 @@ class GameAnalysis:
         """, (self.game_id,))
         substitutions_data = self.cur.fetchall()
 
-        # Get Goal, minutes
-        self.cur.execute("""
-            SELECT club_id, minute
-            FROM game_events
-            WHERE type = 'Goals' AND game_id = %s
-        """, (self.game_id,))
-        goals_data = self.cur.fetchall()
 
-        # Fetch player ELOs in bulk
-        player_ids = [player_id for _, player_id, _ in players_playtimes_data]
-        if player_ids:
-            query = sql.SQL("""
-                SELECT player_id, elo FROM players_elo
-                WHERE player_id IN ({ids}) AND season = %s
-            """).format(ids=sql.SQL(', ').join(sql.Placeholder() * len(player_ids)))
-            self.cur.execute(query, (*player_ids, self._season))
-            elos_data = self.cur.fetchall()
-            elos_dict = dict(elos_data)
-        else:
-            elos_dict = {}
-
-        # Process and store data in attributes
-        self._players = {self.home_club_id: [], self.away_club_id: []}
-        self._players_play_times = {}
-        self._elos = {}
-        self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
 
         # Starting member
         for club_id, player_id, minutes_played in players_playtimes_data:
@@ -113,8 +90,41 @@ class GameAnalysis:
             self._players_play_times[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
             self._players.setdefault(club_id, []).append(player_in_id)
 
+        # Process and store data in attributes
+        self._players = {self.home_club_id: [], self.away_club_id: []}
+        self._players_play_times = {}
+        self._elos = {}
+        self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
+        self._players_list = [player for club_players in self.players.values() for player in club_players]
+
+        # Get Goal, minutes
+        self.cur.execute("""
+            SELECT club_id, minute
+            FROM game_events
+            WHERE type = 'Goals' AND game_id = %s
+        """, (self.game_id,))
+        goals_data = self.cur.fetchall()
+
+
+
+        # player_ids = [player_id for _, player_id, _ in players_playtimes_data]
+        # player_ids = [player_id for _, player_id, _ in self.players]
+        # TODO: This is where thigns go wrong (It only fetches starting members)
+
+        # Fetch player ELOs in bulk
+        if self.players_list:
+            query = sql.SQL("""
+                SELECT player_id, elo FROM players_elo
+                WHERE player_id IN ({ids}) AND season = %s
+            """).format(ids=sql.SQL(', ').join(sql.Placeholder() * len(self.players_list)))
+            self.cur.execute(query, (*self.players_list, self._season))
+            elos_data = self.cur.fetchall()
+            elos_dict = dict(elos_data)
+        else:
+            elos_dict = {}
+
         # Fetch ELOs
-        for player_id in player_ids:
+        for player_id in self.players_list:
             elo = elos_dict.get(player_id, None)
             if elo is not None:
                 self._elos[player_id] = elo
@@ -245,7 +255,7 @@ class GameAnalysis:
         return self._players_play_times
 
     @property
-    def players(self) -> Players:
+    def players(self) -> ClubPlayers:
         """
         Get the players for each club in the game.
 
@@ -263,6 +273,14 @@ class GameAnalysis:
         return self._elos
 
     @property
+    def players_list(self) -> List[int]:
+        """
+        Get list of players (In a single List)
+        @return: Single list of all players in this game
+        """
+
+        return self._players_list
+    @property
     def match_impact_players(self) -> MatchImpacts:
         """
         Get the match impact for all players who participated in the game.
@@ -272,6 +290,8 @@ class GameAnalysis:
         if self._match_impact_players is None:
             self._match_impact_players = self._fetch_match_impact_players()
         return self._match_impact_players
+
+
 
     def summary(self) -> Dict[str, any]:
         """
@@ -314,5 +334,6 @@ if __name__ == "__main__":
     with DatabaseConnection(DATABASE_CONFIG) as conn:
         with conn.cursor() as cur:
             # Initialize game-level analysis
-            game_analysis = GameAnalysis(cur, game_id=2331123)
+            # game_analysis = GameAnalysis(cur, game_id=2331123)
+            game_analysis = GameAnalysis(cur, game_id=2287203)
             game_analysis.print_summary()

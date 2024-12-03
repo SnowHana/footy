@@ -179,6 +179,8 @@ class EloUpdater:
                     conn.commit()
         except Exception as e:
             logging.error(f"Error flushing player ELO updates: {e}", exc_info=True)
+
+
 # Main execution
 if __name__ == "__main__":
     logging.basicConfig(

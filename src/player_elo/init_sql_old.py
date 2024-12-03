@@ -260,6 +260,7 @@ def create_backup_table(table_name: str, engine):
         """)
         print(f"Backup created for table: {table_name} as {backup_table_name}")
 
+
 def create_process_table(engine):
     with engine.connect() as conn:
         conn.execute(f"""CREATE TABLE IF NOT EXISTS process_progress (
@@ -271,6 +272,7 @@ def create_process_table(engine):
                         VALUES ('elo_update', NULL, NULL)
                         ON CONFLICT (process_name) DO NOTHING;""")
         print(f"Table created")
+
 
 def main():
     # Create all tables
@@ -301,8 +303,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
 
 # Create the table in the database
 # Base.metadata.create_all(engine)
