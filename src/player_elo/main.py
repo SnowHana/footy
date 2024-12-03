@@ -26,7 +26,11 @@ class EloUpdater:
         self.MAX_GAMES_TO_PROCESS = max_games_to_process
 
     def _get_last_processed_game(self) -> tuple:
-        """Fetch the last processed game date and game ID from the progress tracker."""
+        """
+        Fetch the last processed game date and game ID from the progress tracker.
+        @return: (last_processed_date: Date, last_processed_game_id: int)
+        @rtype: tuple (Date, Int)
+        """
         self.cur.execute("""
             SELECT last_processed_date, last_processed_game_id
             FROM process_progress
@@ -35,8 +39,14 @@ class EloUpdater:
         result = self.cur.fetchone()
         return result if result else (None, None)
 
-    def _update_progress(self, last_game_date: str, last_game_id: int):
-        """Update the progress tracker with the last processed game date and game ID."""
+    def _update_progress(self, last_game_date: str, last_game_id: int) -> None:
+        """
+        Update and commit the progress tracker with the last processed game date and game ID
+        @param last_game_date: Date of the last processed game
+        @param last_game_id: ID of last processed game ID
+
+        @return: None
+        """
         self.cur.execute("""
             UPDATE process_progress
             SET last_processed_date = %s, last_processed_game_id = %s
@@ -45,10 +55,14 @@ class EloUpdater:
         self.cur.connection.commit()
 
     def fetch_games_to_process(self):
-        """Fetch the list of games to process."""
+        """
+        Fetch the list of games to process.
+        @return: None
+        """
         last_processed_date, last_processed_game_id = self._get_last_processed_game()
 
         if last_processed_date:
+            # Continue from last processed game
             self.cur.execute("""
                 SELECT game_id, date 
                 FROM valid_games 
@@ -56,6 +70,7 @@ class EloUpdater:
                 ORDER BY date, game_id ASC;
             """, (last_processed_date, last_processed_date, last_processed_game_id))
         else:
+            # Start from scratch
             self.cur.execute("""
                 SELECT game_id, date 
                 FROM valid_games 
@@ -66,13 +81,21 @@ class EloUpdater:
 
     @staticmethod
     def process_game(game, db_config):
-        """Static method to process a single game and return player ELO updates."""
+        """
+        Static method to process a single game and return player ELO updates.
+
+        @param game: Tuple containing game_id and game_date
+        @param db_config: Database configuration dictionary
+        @return: Tuple (game_id, game_date, player_elo_updates) or None if there's an error
+        """
         game_id, game_date = game
         player_elo_updates = []
         try:
             # Each process opens its own database connection
             with DatabaseConnection(db_config) as conn:
                 with conn.cursor() as cur:
+                    logging.info(f"Processing game {game_id} on date {game_date}")
+
                     game_analysis = GameAnalysis(cur, game_id=game_id)
 
                     # Club analysis
@@ -93,14 +116,23 @@ class EloUpdater:
                         player_elo_updates.append((player_id, game_analysis.season, new_player_elo))
 
             return game_id, game_date, player_elo_updates
+
         except Exception as e:
-            logging.error(f"Error processing game {game_id}: {e}")
+            logging.error(f"Error processing game {game_id}: {e}", exc_info=True)
             return None
 
     def update_elo_with_multiprocessing(self, db_config, games_to_process):
-        """Parallel processing of games using multiprocessing with chunked updates."""
+        """
+        Parallel processing of games using multiprocessing with chunked updates.
+
+        @param db_config:
+        @param games_to_process:
+        @return:
+        """
         logging.info(f"Starting ELO update for {len(games_to_process)} games.")
         all_player_elo_updates = []  # Accumulate all updates
+
+        # Batching to improve performance
         batches = [games_to_process[i:i + self.BATCH_SIZE] for i in range(0, len(games_to_process), self.BATCH_SIZE)]
 
         for batch in batches:
@@ -132,20 +164,21 @@ class EloUpdater:
     def _flush_player_elo_updates(self, player_elo_updates):
         """Flush player ELO updates to the database."""
         logging.info(f"Flushing {len(player_elo_updates)} player ELO updates to the database.")
-        with DatabaseConnection(DATABASE_CONFIG) as conn:
-            with conn.cursor() as cur:
-                cur.executemany(
-                    """
-                    INSERT INTO players_elo (player_id, season, elo)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (player_id, season)
-                    DO UPDATE SET elo = EXCLUDED.elo;
-                    """,
-                    player_elo_updates
-                )
-                conn.commit()
-
-
+        try:
+            with DatabaseConnection(DATABASE_CONFIG) as conn:
+                with conn.cursor() as cur:
+                    cur.executemany(
+                        """
+                        INSERT INTO players_elo (player_id, season, elo)
+                        VALUES (%s, %s, %s)
+                        ON CONFLICT (player_id, season)
+                        DO UPDATE SET elo = EXCLUDED.elo;
+                        """,
+                        player_elo_updates
+                    )
+                    conn.commit()
+        except Exception as e:
+            logging.error(f"Error flushing player ELO updates: {e}", exc_info=True)
 # Main execution
 if __name__ == "__main__":
     logging.basicConfig(

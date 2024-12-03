@@ -86,7 +86,7 @@ class GameAnalysis:
                 SELECT player_id, elo FROM players_elo
                 WHERE player_id IN ({ids}) AND season = %s
             """).format(ids=sql.SQL(', ').join(sql.Placeholder() * len(player_ids)))
-            cur.execute(query, (*player_ids, self._season))
+            self.cur.execute(query, (*player_ids, self._season))
             elos_data = self.cur.fetchall()
             elos_dict = dict(elos_data)
         else:
