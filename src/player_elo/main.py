@@ -2,6 +2,20 @@ import os
 import subprocess
 
 
+def reset_players_elo():
+    """
+    Resets the players ELO table of Postgresql DB
+    @return:
+    """
+    try:
+        print("\nResetting Players ELO table...")
+        # subprocess.run(["python", "init_player_elo.py"], check=True)
+        subprocess.run(["python", "reset_players_elo.py"], check=True)
+        print("Players ELO Table reset successfully!\n")
+    except subprocess.CalledProcessError as e:
+        print(f"Error during database reset: {e}\n")
+
+
 def reset_db():
     """
     Function to reset the database by executing necessary scripts.
@@ -10,7 +24,8 @@ def reset_db():
         print("\nResetting database...")
         # subprocess.run(["python", "init_player_elo.py"], check=True)
         subprocess.run(["python", "init_sql.py"], check=True)
-        subprocess.run(["python", "reset_players_elo.py"], check=True)
+        # subprocess.run(["python", "reset_players_elo.py"], check=True)
+        reset_players_elo()
         print("Database reset successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during database reset: {e}\n")
@@ -35,16 +50,19 @@ def main():
     while True:
         print("\nFootball Database Management Tool")
         print("1. Reset Database : Delete and Create whole SQL DB from scratch. (Takes up to 10min)")
-        print("2. Run Analysis : Continue on analysing ELO.")
-        print("3. Exit")
+        print("2. Reset Players ELO : Re-init. players ELO (Takes up to 10min)")
+        print("3. Run Analysis : Continue on analysing ELO.")
+        print("4. Exit")
 
         choice = input("Enter your choice (1/2/3): ").strip()
 
         if choice == "1":
             reset_db()
         elif choice == "2":
-            run_analysis()
+            reset_players_elo()
         elif choice == "3":
+            run_analysis()
+        elif choice == "4":
             print("Exiting the program. Goodbye!")
             break
         else:
