@@ -24,30 +24,6 @@ def create_sqlalchemy_engine(config: Dict[str, str]):
 engine = create_sqlalchemy_engine(DATABASE_CONFIG)
 Base = declarative_base()
 
-#
-# def add_indexes_and_constraints(engine):
-#     """Add indexes and constraints to optimize database queries."""
-#     with engine.connect() as conn:
-#         try:
-#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_valid_games_date ON valid_games (date);"))
-#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_player_id ON players (player_id);"))
-#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_clubs_club_id ON clubs (club_id);"))
-#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_appearances_game_id ON appearances (game_id);"))
-#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_elo_player_season ON players_elo (player_id, season);"))
-#             conn.execute(text("""
-#                 ALTER TABLE players_elo
-#                 ADD CONSTRAINT IF NOT EXISTS player_elo_pk PRIMARY KEY (player_id, season);
-#             """))
-#             print("Indexes and constraints added successfully.")
-#         except Exception as e:
-#             print(f"Error adding indexes or constraints: {e}")
-#             raise
-#
-#
-#
-
-
-
 # Define SQLAlchemy models for each DataFrame
 class GameLineup(Base):
     __tablename__ = 'game_lineups'
