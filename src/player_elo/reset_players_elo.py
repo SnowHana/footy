@@ -1,8 +1,8 @@
 from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
 
 # Constants
-BASE_ELO = 1500
-ELO_RANGE = 300
+# BASE_ELO = 1500
+# ELO_RANGE = 300
 
 
 class PlayersEloReinitialiser:
@@ -10,7 +10,7 @@ class PlayersEloReinitialiser:
     @precondition: players_elo.csv file is alr created, player ELO value might not be accurate.
     @precondition: PostGre SQL database is alr created."""
 
-    def __init__(self, cur, base_elo=BASE_ELO, elo_range=ELO_RANGE):
+    def __init__(self, cur, base_elo, elo_range):
         """
         @param cur: DB cursor
         @param base_elo:
@@ -27,6 +27,8 @@ class PlayersEloReinitialiser:
             UPDATE players_elo
             SET elo = NULL;
         """)
+
+        self.cur.connection.commit()
         print("ELO column reset successfully.")
 
     def init_season_valuations(self):
@@ -42,6 +44,8 @@ class PlayersEloReinitialiser:
             FROM player_valuations p
             GROUP BY season;
         """)
+
+        self.cur.connection.commit()
         print("Season valuations initialized.")
 
     def fill_season_gaps(self):
@@ -62,6 +66,8 @@ class PlayersEloReinitialiser:
             LEFT JOIN players_elo p ON s.player_id = p.player_id AND s.min_season = p.season
             WHERE p.season IS NULL;
         """)
+
+        self.cur.connection.commit()
         print("Season gaps filled for players.")
 
     def init_player_elo_with_value(self):
@@ -79,6 +85,8 @@ class PlayersEloReinitialiser:
             AND players_elo.season = EXTRACT(YEAR FROM pv.date::date)
             AND players_elo.elo IS NULL;
         """)
+
+        self.cur.connection.commit()
         print("Player ELO initialized based on market value.")
 
     # def init_player_elo_with_value(self):
@@ -147,6 +155,8 @@ if __name__ == "__main__":
     with DatabaseConnection(DATABASE_CONFIG) as conn:
         with conn.cursor() as cur:
             base_elo = int(input("Enter Base ELO: (Default 2500) ").strip() or 2500)
-            elo_range = int(input("Enter ELO range: (Default 1500) ").strip() or 1500)
+            elo_range = int(input("Enter ELO range: (Default 500) ").strip() or 500)
             elo_reinit = PlayersEloReinitialiser(cur, base_elo, elo_range)
             elo_reinit.init_all_players_elo()
+
+            # elo_reinit.reset_elo_column()
