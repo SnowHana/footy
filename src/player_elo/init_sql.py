@@ -1,7 +1,5 @@
 import os
 from pathlib import Path
-
-import pandas as pd
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date, Boolean, PrimaryKeyConstraint, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -14,66 +12,66 @@ DATABASE_URI = 'postgresql+psycopg://postgres:1234@localhost:5432/football'
 engine = create_engine(DATABASE_URI)
 
 Base = declarative_base()
-
-def _import_dataframes() -> dict:
-    """Read data from CSV files and store as DataFrames."""
-    global DATA_DIR
-    dataframes = {}
-    for dirpath, _, filenames in os.walk(DATA_DIR):
-        for filename in filenames:
-            file_key = f"{filename.split('.')[0]}"
-            filepath = os.path.join(dirpath, filename)
-            dataframes[file_key] = pd.read_csv(filepath, sep=",", encoding="UTF-8")
-            print(f"{file_key}: {dataframes[file_key].shape}")
-    print("Data imported successfully.")
-    return dataframes
-
-
-def drop_all_tables(conn):
-    """Drops all tables in the current database schema."""
-    print("Dropping all tables...")
-    try:
-        conn.execute(text("SET session_replication_role = 'replica';"))
-        result = conn.execute(
-            text("""
-                SELECT tablename
-                FROM pg_tables
-                WHERE schemaname = 'public';
-            """)
-        )
-        tables = [row[0] for row in result]
-
-        for table in tables:
-            print(f"Dropping table: {table}")
-            conn.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE;"))
-
-        conn.execute(text("SET session_replication_role = 'origin';"))
-        print("All tables dropped successfully.")
-    except Exception as e:
-        print(f"Error dropping tables: {e}")
-        raise
-
-
-def add_indexes_and_constraints(engine):
-    """Add indexes and constraints to optimize database queries."""
-    with engine.connect() as conn:
-        try:
-            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_valid_games_date ON valid_games (date);"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_player_id ON players (player_id);"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_clubs_club_id ON clubs (club_id);"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_appearances_game_id ON appearances (game_id);"))
-            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_elo_player_season ON players_elo (player_id, season);"))
-            conn.execute(text("""
-                ALTER TABLE players_elo
-                ADD CONSTRAINT IF NOT EXISTS player_elo_pk PRIMARY KEY (player_id, season);
-            """))
-            print("Indexes and constraints added successfully.")
-        except Exception as e:
-            print(f"Error adding indexes or constraints: {e}")
-            raise
-
-
-
+#
+# def _import_dataframes() -> dict:
+#     """Read data from CSV files and store as DataFrames."""
+#     global DATA_DIR
+#     dataframes = {}
+#     for dirpath, _, filenames in os.walk(DATA_DIR):
+#         for filename in filenames:
+#             file_key = f"{filename.split('.')[0]}"
+#             filepath = os.path.join(dirpath, filename)
+#             dataframes[file_key] = pd.read_csv(filepath, sep=",", encoding="UTF-8")
+#             print(f"{file_key}: {dataframes[file_key].shape}")
+#     print("Data imported successfully.")
+#     return dataframes
+#
+#
+# def drop_all_tables(conn):
+#     """Drops all tables in the current database schema."""
+#     print("Dropping all tables...")
+#     try:
+#         conn.execute(text("SET session_replication_role = 'replica';"))
+#         result = conn.execute(
+#             text("""
+#                 SELECT tablename
+#                 FROM pg_tables
+#                 WHERE schemaname = 'public';
+#             """)
+#         )
+#         tables = [row[0] for row in result]
+#
+#         for table in tables:
+#             print(f"Dropping table: {table}")
+#             conn.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE;"))
+#
+#         conn.execute(text("SET session_replication_role = 'origin';"))
+#         print("All tables dropped successfully.")
+#     except Exception as e:
+#         print(f"Error dropping tables: {e}")
+#         raise
+#
+#
+# def add_indexes_and_constraints(engine):
+#     """Add indexes and constraints to optimize database queries."""
+#     with engine.connect() as conn:
+#         try:
+#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_valid_games_date ON valid_games (date);"))
+#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_player_id ON players (player_id);"))
+#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_clubs_club_id ON clubs (club_id);"))
+#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_appearances_game_id ON appearances (game_id);"))
+#             conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_elo_player_season ON players_elo (player_id, season);"))
+#             conn.execute(text("""
+#                 ALTER TABLE players_elo
+#                 ADD CONSTRAINT IF NOT EXISTS player_elo_pk PRIMARY KEY (player_id, season);
+#             """))
+#             print("Indexes and constraints added successfully.")
+#         except Exception as e:
+#             print(f"Error adding indexes or constraints: {e}")
+#             raise
+#
+#
+#
 
 
 
@@ -285,51 +283,132 @@ class Club(Base):
     last_season = Column(Integer)
     filename = Column(String)
     url = Column(String)
+#
+#
+# # Connect to the database (replace with your database URL)
+# # engine = create_engine('postgresql://username:password@localhost:5432/football')
+# def create_backup_table(table_name: str, engine):
+#     """
+#     Create a backup of a table by copying its structure and data.
+#
+#     Args:
+#         table_name (str): Name of the table to back up.
+#         engine: SQLAlchemy engine object.
+#     """
+#     backup_table_name = f"{table_name}_backup"
+#     with engine.connect() as conn:
+#         conn.execute(text(f"DROP TABLE IF EXISTS {backup_table_name};"))
+#         conn.execute(text(f"""
+#             CREATE TABLE {backup_table_name} AS
+#             SELECT * FROM {table_name};
+#         """))
+#         print(f"Backup created for table: {table_name} as {backup_table_name}")
+#
+#
+# def main():
+#     with engine.connect() as conn:
+#         drop_all_tables(conn)
+#
+#     Base.metadata.create_all(engine)
+#     print("Tables recreated successfully.")
+#
+#     dataframes = _import_dataframes()
+#     Session = sessionmaker(bind=engine)
+#     session = Session()
+#     try:
+#         for table_name, dataframe in dataframes.items():
+#             dataframe.to_sql(table_name, con=engine, if_exists='append', index=False)
+#             print(f"{table_name} is imported.")
+#         session.commit()
+#     except Exception as e:
+#         session.rollback()
+#         print(f"Error during data import: {e}")
+#     finally:
+#         session.close()
+#
+#
+# # Main execution with indexing
+# if __name__ == "__main__":
+#     main()  # Existing main function call
+#     add_indexes_and_constraints(engine)
 
 
-# Connect to the database (replace with your database URL)
-# engine = create_engine('postgresql://username:password@localhost:5432/football')
-def create_backup_table(table_name: str, engine):
-    """
-    Create a backup of a table by copying its structure and data.
-
-    Args:
-        table_name (str): Name of the table to back up.
-        engine: SQLAlchemy engine object.
-    """
-    backup_table_name = f"{table_name}_backup"
-    with engine.connect() as conn:
-        conn.execute(text(f"DROP TABLE IF EXISTS {backup_table_name};"))
-        conn.execute(text(f"""
-            CREATE TABLE {backup_table_name} AS
-            SELECT * FROM {table_name};
-        """))
-        print(f"Backup created for table: {table_name} as {backup_table_name}")
+def drop_all_tables(conn):
+    """Drops all tables in the current database schema."""
+    print("Dropping all tables...")
+    conn.execute(text("DROP SCHEMA public CASCADE;"))
+    conn.execute(text("CREATE SCHEMA public;"))
+    print("Schema reset complete.")
 
 
-def main():
-    with engine.connect() as conn:
-        drop_all_tables(conn)
-
+def recreate_tables(engine):
+    """Recreate tables using SQLAlchemy models."""
     Base.metadata.create_all(engine)
     print("Tables recreated successfully.")
 
-    dataframes = _import_dataframes()
-    Session = sessionmaker(bind=engine)
-    session = Session()
+
+def load_csv_to_postgres(table_name, csv_file_path, engine):
+    """
+    Load a CSV file into a PostgreSQL table using the COPY command.
+
+    :param table_name: Name of the PostgreSQL table.
+    :param csv_file_path: Path to the CSV file.
+    :param engine: SQLAlchemy engine connected to the database.
+    """
+    conn = engine.raw_connection()  # Get raw connection
+    cursor = conn.cursor()  # Get raw psycopg2 cursor
     try:
-        for table_name, dataframe in dataframes.items():
-            dataframe.to_sql(table_name, con=engine, if_exists='append', index=False)
-            print(f"{table_name} is imported.")
-        session.commit()
+        print(f"Loading data into table: {table_name} from file: {csv_file_path}")
+        copy_sql = f"""
+            COPY {table_name} FROM STDIN WITH CSV HEADER DELIMITER ',';
+        """
+        with open(csv_file_path, 'r') as f:
+            cursor.copy(copy_sql, f)  # Use psycopg2's copy_expert
+        conn.commit()  # Commit transaction
+        print(f"Data loaded successfully into table: {table_name}")
     except Exception as e:
-        session.rollback()
-        print(f"Error during data import: {e}")
+        conn.rollback()  # Rollback on error
+        print(f"Error loading data into table {table_name}: {e}")
     finally:
-        session.close()
+        cursor.close()  # Close cursor
+        conn.close()  # Close connection
+def load_all_csv(data_dir, engine):
+    """Load all CSV files in the data directory into corresponding PostgreSQL tables."""
+
+    global DATA_DIR
+    csv_to_table_map = {}
+    for dirpath, _, filenames in os.walk(DATA_DIR):
+        for filename in filenames:
+            file_key = f"{filename.split('.')[0]}"
+            filepath = os.path.join(dirpath, filename)
+            csv_to_table_map[filename] = file_key
+            # dataframes[file_key] = pd.read_csv(filepath, sep=",", encoding="UTF-8")
+            # print(f"{file_key}: {csv_to_table_map[file_key].shape}")
+
+    # print(csv_to_table_map)
+    # csv_to_table_map = {
+    #     "players_elo.csv": "players_elo",
+    #     "game_lineups.csv": "game_lineups",
+    #     "competitions.csv": "competitions",
+    #     # Add other mappings as needed
+    # }
+
+    for csv_file, table_name in csv_to_table_map.items():
+        csv_file_path = os.path.join(data_dir, csv_file)
+        if os.path.exists(csv_file_path):
+            load_csv_to_postgres(table_name, csv_file_path, engine)
+        else:
+            print(f"File {csv_file_path} not found. Skipping.")
 
 
-# Main execution with indexing
+def main():
+    data_dir = DATA_DIR  # Path to your CSV directory
+    with engine.connect() as conn:
+        drop_all_tables(conn)
+
+    recreate_tables(engine)
+    load_all_csv(data_dir, engine)
+
+
 if __name__ == "__main__":
-    main()  # Existing main function call
-    add_indexes_and_constraints(engine)
+    main()
