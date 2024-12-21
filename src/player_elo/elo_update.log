@@ -82,3 +82,67 @@ Traceback (most recent call last):
   File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
     raise ex.with_traceback(None)
 psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:03,234 - INFO - Starting ELO update for 100 games.
+2024-12-22 01:18:03,235 - INFO - START: (2250417, '2013-03-31') - END: (2224714, '2013-04-07')
+2024-12-22 01:18:57,655 - INFO - Flushing 1046 player ELO updates to the database.
+2024-12-22 01:18:57,723 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x10ca51640>: pipeline aborted
+2024-12-22 01:18:57,724 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,784 - INFO - Flushing 1042 player ELO updates to the database.
+2024-12-22 01:18:57,840 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,852 - INFO - Flushing 1048 player ELO updates to the database.
+2024-12-22 01:18:57,867 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x10cb63ce0>: pipeline aborted
+2024-12-22 01:18:57,868 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,929 - INFO - Flushing 1048 player ELO updates to the database.
+2024-12-22 01:18:57,950 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x112f40950>: pipeline aborted
+2024-12-22 01:18:57,951 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,964 - INFO - Flushing 1014 player ELO updates to the database.
+2024-12-22 01:18:57,983 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x112f41250>: pipeline aborted
+2024-12-22 01:18:57,983 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,994 - INFO - Flushing 1048 player ELO updates to the database.
+2024-12-22 01:18:58,011 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:58,017 - INFO - Batch completed. Processed 100 games.
+2024-12-22 01:18:58,017 - INFO - Flushing 340 player ELO updates to the database.
+2024-12-22 01:18:58,034 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x112f400e0>: pipeline aborted
+2024-12-22 01:18:58,035 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification

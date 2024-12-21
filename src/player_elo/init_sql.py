@@ -1,3 +1,276 @@
+# import os
+# from pathlib import Path
+# from sqlalchemy import create_engine, text
+#
+# # Data dir
+# BASE_DIR = Path(__file__).resolve().parent
+# DATA_DIR = BASE_DIR.parents[0] / 'data' / 'transfer_data'
+#
+# # Database URI
+# DATABASE_URI = 'postgresql+psycopg://postgres:1234@localhost:5432/football'
+# engine = create_engine(DATABASE_URI)
+#
+# def drop_all_tables(conn):
+#     """Drops all tables in the current database schema."""
+#     print("Dropping all tables...")
+#     conn.execute(text("DROP SCHEMA public CASCADE;"))
+#     conn.execute(text("CREATE SCHEMA public;"))
+#     print("Schema reset complete.")
+#
+# def create_tables(conn):
+#     """Create tables with raw SQL."""
+#     print("Creating tables...")
+#     table_creation_commands = [
+#         """
+#         CREATE TABLE players_elo (
+#             player_id INT NOT NULL,
+#             season INT NOT NULL,
+#             elo FLOAT,
+#             PRIMARY KEY (player_id, season)
+#         );
+#         """,
+#         """
+#         CREATE TABLE game_lineups (
+#             game_lineups_id TEXT PRIMARY KEY,
+#             date DATE,
+#             game_id INT,
+#             player_id INT,
+#             club_id INT,
+#             player_name TEXT,
+#             type TEXT,
+#             position TEXT,
+#             number TEXT,
+#             team_captain INT
+#         );
+#         """,
+#         """
+#         CREATE TABLE competitions (
+#             competition_id TEXT PRIMARY KEY,
+#             competition_code TEXT,
+#             name TEXT,
+#             sub_type TEXT,
+#             type TEXT,
+#             country_id INT,
+#             country_name TEXT,
+#             domestic_league_code TEXT,
+#             confederation TEXT,
+#             url TEXT,
+#             is_major_national_league BOOLEAN
+#         );
+#         """,
+#         """
+#         CREATE TABLE appearances (
+#             appearance_id TEXT PRIMARY KEY,
+#             game_id INT,
+#             player_id INT,
+#             player_club_id INT,
+#             player_current_club_id INT,
+#             date DATE,
+#             player_name TEXT,
+#             competition_id TEXT,
+#             yellow_cards INT,
+#             red_cards INT,
+#             goals INT,
+#             assists INT,
+#             minutes_played INT
+#         );
+#         """,
+#         """
+#         CREATE TABLE player_valuations (
+#             player_id INT NOT NULL,
+#             date DATE NOT NULL,
+#             market_value_in_eur INT,
+#             current_club_id INT,
+#             player_club_domestic_competition_id TEXT,
+#             PRIMARY KEY (player_id, date)
+#         );
+#         """,
+#         """
+#         CREATE TABLE game_events (
+#             game_event_id TEXT PRIMARY KEY,
+#             date DATE,
+#             game_id INT,
+#             minute INT,
+#             type TEXT,
+#             club_id INT,
+#             player_id INT,
+#             description TEXT,
+#             player_in_id INT,
+#             player_assist_id INT
+#         );
+#         """,
+#         """
+#         CREATE TABLE transfers (
+#             player_id INT NOT NULL,
+#             transfer_date DATE NOT NULL,
+#             transfer_season TEXT,
+#             from_club_id INT NOT NULL,
+#             to_club_id INT NOT NULL,
+#             from_club_name TEXT,
+#             to_club_name TEXT,
+#             transfer_fee FLOAT,
+#             market_value_in_eur FLOAT,
+#             player_name TEXT,
+#             PRIMARY KEY (player_id, from_club_id, to_club_id)
+#         );
+#         """,
+#         """
+#         CREATE TABLE players (
+#             player_id INT PRIMARY KEY,
+#             first_name TEXT,
+#             last_name TEXT,
+#             name TEXT,
+#             last_season INT,
+#             current_club_id INT,
+#             player_code TEXT,
+#             country_of_birth TEXT,
+#             city_of_birth TEXT,
+#             country_of_citizenship TEXT,
+#             date_of_birth DATE,
+#             sub_position TEXT,
+#             position TEXT,
+#             foot TEXT,
+#             height_in_cm FLOAT,
+#             contract_expiration_date DATE,
+#             agent_name TEXT,
+#             image_url TEXT,
+#             url TEXT,
+#             current_club_domestic_competition_id TEXT,
+#             current_club_name TEXT,
+#             market_value_in_eur FLOAT,
+#             highest_market_value_in_eur FLOAT
+#         );
+#         """,
+#         """
+#         CREATE TABLE games (
+#             game_id INT PRIMARY KEY,
+#             competition_id TEXT,
+#             season INT,
+#             round TEXT,
+#             date DATE,
+#             home_club_id INT,
+#             away_club_id INT,
+#             home_club_goals INT,
+#             away_club_goals INT,
+#             home_club_position INT,
+#             away_club_position INT,
+#             home_club_manager_name TEXT,
+#             away_club_manager_name TEXT,
+#             stadium TEXT,
+#             attendance INT,
+#             referee TEXT,
+#             url TEXT,
+#             home_club_formation TEXT,
+#             away_club_formation TEXT,
+#             home_club_name TEXT,
+#             away_club_name TEXT,
+#             aggregate TEXT,
+#             competition_type TEXT
+#         );
+#         """,
+#         """
+#         CREATE TABLE club_games (
+#             game_id INT PRIMARY KEY,
+#             club_id INT,
+#             own_goals INT,
+#             own_position INT,
+#             own_manager_name TEXT,
+#             opponent_id INT,
+#             opponent_goals INT,
+#             opponent_position INT,
+#             opponent_manager_name TEXT,
+#             hosting TEXT,
+#             is_win INT
+#         );
+#         """,
+#         """
+#         CREATE TABLE clubs (
+#             club_id INT PRIMARY KEY,
+#             club_code TEXT,
+#             name TEXT,
+#             domestic_competition_id TEXT,
+#             total_market_value FLOAT,
+#             squad_size INT,
+#             average_age FLOAT,
+#             foreigners_number INT,
+#             foreigners_percentage FLOAT,
+#             national_team_players INT,
+#             stadium_name TEXT,
+#             stadium_seats INT,
+#             net_transfer_record TEXT,
+#             coach_name FLOAT,
+#             last_season INT,
+#             filename TEXT,
+#             url TEXT
+#         );
+#         """
+#     ]
+#
+#     for command in table_creation_commands:
+#         conn.execute(text(command))
+#         print(f"Table created: {command.split()[2]}")  # Print the table name being created
+#     print("All tables created successfully.")
+#
+# def load_csv_to_postgres(table_name, csv_file_path, engine):
+#     """
+#     Load a CSV file into a PostgreSQL table using the COPY command.
+#
+#     :param table_name: Name of the PostgreSQL table.
+#     :param csv_file_path: Path to the CSV file.
+#     :param engine: SQLAlchemy engine connected to the database.
+#     """
+#     conn = engine.raw_connection()  # Get raw connection
+#     cursor = conn.cursor()  # Get raw psycopg2 cursor
+#     try:
+#         print(f"Loading data into table: {table_name} from file: {csv_file_path}")
+#         copy_sql = f"""
+#             COPY {table_name} FROM STDIN WITH CSV HEADER DELIMITER ',';
+#         """
+#         with open(csv_file_path, 'r') as f:
+#             cursor.copy(copy_sql, f)  # Use psycopg2's copy_expert
+#         conn.commit()  # Commit transaction
+#         print(f"Data loaded successfully into table: {table_name}")
+#     except Exception as e:
+#         conn.rollback()  # Rollback on error
+#         print(f"Error loading data into table {table_name}: {e}")
+#     finally:
+#         cursor.close()  # Close cursor
+#         conn.close()  # Close connection
+#
+# def load_all_csv(data_dir, engine):
+#     """Load all CSV files in the data directory into corresponding PostgreSQL tables."""
+#     csv_to_table_map = {
+#         "players_elo.csv": "players_elo",
+#         "game_lineups.csv": "game_lineups",
+#         "competitions.csv": "competitions",
+#         "appearances.csv": "appearances",
+#         "player_valuations.csv": "player_valuations",
+#         "game_events.csv": "game_events",
+#         "transfers.csv": "transfers",
+#         "players.csv": "players",
+#         "games.csv": "games",
+#         "club_games.csv": "club_games",
+#         "clubs.csv": "clubs"
+#     }
+#
+#     for csv_file, table_name in csv_to_table_map.items():
+#         csv_file_path = os.path.join(data_dir, csv_file)
+#         if os.path.exists(csv_file_path):
+#             load_csv_to_postgres(table_name, csv_file_path, engine)
+#         else:
+#             print(f"File {csv_file_path} not found. Skipping.")
+#
+# def main():
+#     data_dir = DATA_DIR  # Path to your CSV directory
+#     with engine.connect() as conn:
+#         drop_all_tables(conn)  # Drop all tables
+#         create_tables(conn)   # Recreate tables
+#     load_all_csv(data_dir, engine)  # Load CSV data into tables
+#
+# if __name__ == "__main__":
+#     main()
+
+
 import os
 from pathlib import Path
 from sqlalchemy import create_engine, Column, Integer, String, Float, Date, Boolean, PrimaryKeyConstraint, text
@@ -248,8 +521,8 @@ class ClubGame(Base):
 class PlayerElo(Base):
     __tablename__ = 'players_elo'
 
-    player_id = Column(Integer)
-    season = Column(Integer)
+    player_id = Column(Integer, primary_key=True)
+    season = Column(Integer, primary_key=True)
     first_name = Column(String)
     last_name = Column(String)
     name = Column(String)
