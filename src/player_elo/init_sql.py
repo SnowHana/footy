@@ -15,7 +15,6 @@ engine = create_engine(DATABASE_URI)
 
 Base = declarative_base()
 
-
 def _import_dataframes() -> dict:
     """Read data from CSV files and store as DataFrames."""
     global DATA_DIR
@@ -28,6 +27,54 @@ def _import_dataframes() -> dict:
             print(f"{file_key}: {dataframes[file_key].shape}")
     print("Data imported successfully.")
     return dataframes
+
+
+def drop_all_tables(conn):
+    """Drops all tables in the current database schema."""
+    print("Dropping all tables...")
+    try:
+        conn.execute(text("SET session_replication_role = 'replica';"))
+        result = conn.execute(
+            text("""
+                SELECT tablename
+                FROM pg_tables
+                WHERE schemaname = 'public';
+            """)
+        )
+        tables = [row[0] for row in result]
+
+        for table in tables:
+            print(f"Dropping table: {table}")
+            conn.execute(text(f"DROP TABLE IF EXISTS {table} CASCADE;"))
+
+        conn.execute(text("SET session_replication_role = 'origin';"))
+        print("All tables dropped successfully.")
+    except Exception as e:
+        print(f"Error dropping tables: {e}")
+        raise
+
+
+def add_indexes_and_constraints(engine):
+    """Add indexes and constraints to optimize database queries."""
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_valid_games_date ON valid_games (date);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_player_id ON players (player_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_clubs_club_id ON clubs (club_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_appearances_game_id ON appearances (game_id);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_elo_player_season ON players_elo (player_id, season);"))
+            conn.execute(text("""
+                ALTER TABLE players_elo
+                ADD CONSTRAINT IF NOT EXISTS player_elo_pk PRIMARY KEY (player_id, season);
+            """))
+            print("Indexes and constraints added successfully.")
+        except Exception as e:
+            print(f"Error adding indexes or constraints: {e}")
+            raise
+
+
+
+
 
 
 # Define SQLAlchemy models for each DataFrame
@@ -260,35 +307,19 @@ def create_backup_table(table_name: str, engine):
         print(f"Backup created for table: {table_name} as {backup_table_name}")
 
 
-def add_indexes(engine):
-    """
-    Add indexes to optimize database queries.
-    """
-    with engine.connect() as conn:
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_valid_games_date ON valid_games (date);"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_player_id ON players (player_id);"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_clubs_club_id ON clubs (club_id);"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_appearances_game_id ON appearances (game_id);"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_players_elo_player_season ON players_elo (player_id, season);"))
-
 def main():
-    # Create all tables
+    with engine.connect() as conn:
+        drop_all_tables(conn)
+
     Base.metadata.create_all(engine)
+    print("Tables recreated successfully.")
 
-    try:
-        create_backup_table('players_elo', engine)
-    except Exception as e:
-        print(f"Error creating a backup {e}")
-
-    # Load data from CSV files and write to SQL
     dataframes = _import_dataframes()
-
-    # Create a session
     Session = sessionmaker(bind=engine)
     session = Session()
     try:
         for table_name, dataframe in dataframes.items():
-            dataframe.to_sql(table_name, con=engine, if_exists='replace', index=False)
+            dataframe.to_sql(table_name, con=engine, if_exists='append', index=False)
             print(f"{table_name} is imported.")
         session.commit()
     except Exception as e:
@@ -301,4 +332,4 @@ def main():
 # Main execution with indexing
 if __name__ == "__main__":
     main()  # Existing main function call
-    add_indexes(engine)  # Add indexes after tables are created and data is populated
+    add_indexes_and_constraints(engine)

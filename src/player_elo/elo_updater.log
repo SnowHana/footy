@@ -1,5 +1,0 @@
-2024-11-27 12:44:00,277 [INFO] Starting ELO update for 63246 games.
-2024-11-27 12:44:00,277 [INFO] Processing batch from 2012-07-03 to 2012-07-24.
-2024-11-27 12:44:58,655 [INFO] Processing batch from 2012-07-24 to 2012-08-02.
-2024-11-27 12:45:54,450 [INFO] Processing batch from 2012-08-02 to 2012-08-11.
-ERROR:root:Error processing game 2287203: Warning: No player found from ELO with player ID 177933.

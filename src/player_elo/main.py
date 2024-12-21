@@ -25,7 +25,7 @@ def reset_db():
         # subprocess.run(["python", "init_player_elo.py"], check=True)
         subprocess.run(["python", "init_sql.py"], check=True)
         # subprocess.run(["python", "reset_players_elo.py"], check=True)
-        reset_players_elo()
+        # reset_players_elo()
         print("Database reset successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during database reset: {e}\n")
@@ -49,15 +49,20 @@ def main():
     """
     while True:
         print("\nFootball Database Management Tool")
-        print("1. Reset Database : Delete and Create whole SQL DB from scratch. (Takes up to 10min)")
-        print("2. Reset Players ELO : Re-init. players ELO (Takes up to 10min)")
+        print("1. Reset Database : Delete and Create whole SQL DB from scratch. "
+              "(Takes up to 10min, don't do this process unless you HAVE TO.)")
+        print("2. Reset Players ELO : Re-init. players ELO (Takes less than a minute)")
         print("3. Run Analysis : Continue on analysing ELO.")
         print("4. Exit")
 
-        choice = input("Enter your choice (1/2/3): ").strip()
+        choice = input("Enter your choice (1/2/3/4): ").strip()
 
         if choice == "1":
-            reset_db()
+            confirm = input("Do you really want to reset database? (y/n): ").strip()
+            if confirm == "y":
+                reset_db()
+            else:
+                print("Exiting...")
         elif choice == "2":
             reset_players_elo()
         elif choice == "3":
