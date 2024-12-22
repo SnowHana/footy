@@ -118,7 +118,7 @@ class Transfer(Base):
     player_name = Column(String)
 
     __table_args__ = (
-        PrimaryKeyConstraint('player_id', 'from_club_id', 'to_club_id', name='transfer_pk'),
+        PrimaryKeyConstraint('player_id', 'from_club_id', 'to_club_id', 'transfer_date', name='transfer_pk'),
     )
 
 
