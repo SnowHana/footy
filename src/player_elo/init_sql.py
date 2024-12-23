@@ -24,7 +24,7 @@ def create_sqlalchemy_engine(config: Dict[str, str]):
 engine = create_sqlalchemy_engine(DATABASE_CONFIG)
 Base = declarative_base()
 
-# Define SQLAlchemy models for each DataFrame
+# SQLAlchemy models.
 class GameLineup(Base):
     __tablename__ = 'game_lineups'
 
@@ -181,7 +181,8 @@ class Game(Base):
 class ClubGame(Base):
     __tablename__ = 'club_games'
 
-    game_id = Column(Integer, primary_key=True)
+    # game_id = Column(Integer, primary_key=True)
+    game_id = Column(Integer)
     club_id = Column(Integer)
     own_goals = Column(Integer)
     own_position = Column(Integer)
@@ -193,12 +194,16 @@ class ClubGame(Base):
     hosting = Column(String)
     is_win = Column(Integer)
 
+    __table_args__ = (
+        PrimaryKeyConstraint('game_id','club_id', name='club_game_pk'),
+    )
+
 
 class PlayerElo(Base):
     __tablename__ = 'players_elo'
 
-    player_id = Column(Integer, primary_key=True)
-    season = Column(Integer, primary_key=True)
+    player_id = Column(Integer)
+    season = Column(Integer)
     first_name = Column(String)
     last_name = Column(String)
     name = Column(String)
@@ -235,7 +240,11 @@ class Club(Base):
 
 
 def drop_all_tables(engine):
-    """Drops all tables in the current database schema."""
+    """
+    Drops all tables in current DB schema (public)
+    @param engine:
+    @return:
+    """
     print("Dropping all tables...")
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE;"))
@@ -244,14 +253,23 @@ def drop_all_tables(engine):
 
 
 def recreate_tables(engine):
-    """Recreate tables using SQLAlchemy models."""
+    """
+    Recreate tables using SQLAlchemy models.
+    @param engine:
+    @return:
+    """
     Base.metadata.create_all(engine)
     print("Tables recreated successfully.")
 
 def load_csv_to_postgres(table_name, csv_file_path, engine):
     """
-    Load a CSV file into a PostgreSQL table using psycopg 3's new COPY interface.
+    Load a csv files to Postgre DB
+    @param table_name:
+    @param csv_file_path:
+    @param engine:
+    @return:
     """
+
     from psycopg import sql
 
     # Our COPY statement: Make sure it matches your CSV format
@@ -262,14 +280,13 @@ def load_csv_to_postgres(table_name, csv_file_path, engine):
 
     print(f"Loading data into table: {table_name} from file: {csv_file_path}")
 
-    raw_conn = engine.raw_connection()  # raw DB-API connection (should be psycopg 3 if your URL is `postgresql+psycopg://`)
+    raw_conn = engine.raw_connection()
     try:
         with raw_conn.cursor() as cur:
+            # copy_expert method no longer works in psycopg3, so we should read a file line-by-line and copy it to sql?
             # Open the CSV file in binary mode
             with open(csv_file_path, 'rb') as f:
-                # Use the psycopg 3 COPY context manager
                 with cur.copy(copy_sql) as copy:
-                    # Read the CSV and write it line-by-line to the copy stream
                     for line in f:
                         copy.write(line)
 
@@ -286,14 +303,18 @@ def load_csv_to_postgres(table_name, csv_file_path, engine):
 
 
 def load_all_csv(data_dir, engine):
-    """Load all CSV files in the data directory into corresponding PostgreSQL tables."""
+    """
+    Load all CSV files in the data directory into corresponding PostgreSQL tables.
+    @param data_dir:
+    @param engine:
+    @return:
+    """
 
-    # We map "filename.csv" -> "filename" as the table name
-    # Make sure your CSV file names match your table names
+    # Map "filename.csv" -> "filename" as the table name
     csv_to_table_map = {}
     for dirpath, _, filenames in os.walk(data_dir):
         for filename in filenames:
-            file_key = filename.split('.')[0]  # e.g. "players" from "players.csv"
+            file_key = filename.split('.')[0]
             filepath = os.path.join(dirpath, filename)
             csv_to_table_map[filepath] = file_key
 
@@ -308,6 +329,8 @@ def load_all_csv(data_dir, engine):
 def create_process_table(engine):
     """
     Create a table to track the progress of processes such as ELO updates.
+    @param engine:
+    @return:
     """
     print("Creating or updating process progress table...")
     with engine.begin() as conn:
@@ -336,16 +359,16 @@ def create_process_table(engine):
 
 
 def main():
-    data_dir = DATA_DIR  # Path to your CSV directory
+    data_dir = DATA_DIR
 
-    # 1) Drop existing tables
+    # Drop existing tables
     drop_all_tables(engine)
-    # 2) Recreate tables from SQLAlchemy models
+    # Recreate tables from SQLAlchemy models
     recreate_tables(engine)
-    # 3) Load all CSVs with psycopg 3 "copy" approach
+    # Load all csvs
     load_all_csv(data_dir, engine)
 
-    # STEP 1: Check row counts after loading each table
+    # Checking if table was correctly created
     print("\nVerifying row counts after loading CSVs...")
     with engine.connect() as conn:
         for table_name in Base.metadata.tables.keys():
@@ -353,7 +376,7 @@ def main():
             count = result.scalar()
             print(f"Table '{table_name}' has {count} rows.")
 
-    # 4) Create process_progress table
+    # Create process_progress table
     create_process_table(engine)
 
 
