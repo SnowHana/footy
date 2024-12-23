@@ -108,17 +108,19 @@ class GameAnalysis:
         # Process starting players
         # self._players_play_times = {}
         for club_id, player_id, minutes_played in players_playtimes_data:
-            self._players.setdefault(club_id, []).append(player_id)
-            end_time = minutes_played if minutes_played > 0 else self.FULL_GAME_MINUTES
-            self._players_play_times[(club_id, player_id)] = (0, end_time)
+            if player_id is not None:
+                self._players.setdefault(club_id, []).append(player_id)
+                end_time = minutes_played if minutes_played > 0 else self.FULL_GAME_MINUTES
+                self._players_play_times[(club_id, player_id)] = (0, end_time)
 
         # Process substituted players
         for club_id, player_id, player_in_id, minute in substitutions_data:
-            if (club_id, player_id) in self._players_play_times:
+            if player_id is not None and (club_id, player_id) in self._players_play_times:
                 self._players_play_times[(club_id, player_id)] = (
-                self._players_play_times[(club_id, player_id)][0], minute)
-            self._players_play_times[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
-            self._players.setdefault(club_id, []).append(player_in_id)
+                    self._players_play_times[(club_id, player_id)][0], minute)
+            if player_in_id is not None:
+                self._players_play_times[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
+                self._players.setdefault(club_id, []).append(player_in_id)
 
         # Add players_list field
         self._players_list = [player for club_players in self._players.values() for player in club_players]

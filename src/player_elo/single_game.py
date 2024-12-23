@@ -1,3 +1,4 @@
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 from src.player_elo.club_analysis import ClubAnalysis
@@ -54,4 +55,5 @@ def process_game(game, db_config):
         logging.error(f"Error processing game {game_id}: {e}", exc_info=True)
         return None
 
-process_game(2225462 )
+
+process_game((2225462, datetime(2012, 9, 23)), DATABASE_CONFIG)
