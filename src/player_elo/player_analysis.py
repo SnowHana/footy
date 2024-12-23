@@ -12,7 +12,7 @@ class PlayerAnalysis(BaseAnalysis):
     """
 
     def __init__(self, game_analysis: GameAnalysis, player_id: int):
-        super().__init__(game_analysis, entity_id=player_id, k_value=1, q_value=1)
+        super().__init__(game_analysis, entity_id=player_id, k_value=32, q_value=1)
         # IDK maybe delete this cuz it's confusing?
         self.player_id = player_id
         self._club_id = None
@@ -39,7 +39,6 @@ class PlayerAnalysis(BaseAnalysis):
         except KeyError as e:
             logging.error(e)
             raise
-
 
     def _calculate_expectation(self) -> float:
         opponent_elo = self.game_analysis.club_ratings[self.opponent_id]
@@ -120,17 +119,17 @@ class PlayerAnalysis(BaseAnalysis):
 #         print("Player ELO:", player_analysis.elo)
 #         print("Player ELO Change", player_analysis.new_elo(club_analysis.calculate_change()))
 
-        # Update the club's ELO based on actual game score (e.g., actual_score=1.0 if they won)
-        # updated_elo = club_analysis.update_elo(actual_score=1.0, weight=0.5)
-        # print("Updated Club ELO:", updated_elo)
+# Update the club's ELO based on actual game score (e.g., actual_score=1.0 if they won)
+# updated_elo = club_analysis.update_elo(actual_score=1.0, weight=0.5)
+# print("Updated Club ELO:", updated_elo)
 
-        # Initialize BaseAnalysis for a player entity
-        # player_analysis = BaseAnalysis(game_analysis=game_analysis, entity_id=20506, is_club=False)
-        #
-        # # Calculate ELO and expectation for the player
-        # print("Player ELO:", player_analysis.elo)
-        # print("Player Expectation:", player_analysis.expectation)
-        #
-        # # Update the player's ELO based on actual performance score
-        # updated_player_elo = player_analysis.update_elo(actual_score=0.5, weight=0.3)
-        # print("Updated Player ELO:", updated_player_elo)
+# Initialize BaseAnalysis for a player entity
+# player_analysis = BaseAnalysis(game_analysis=game_analysis, entity_id=20506, is_club=False)
+#
+# # Calculate ELO and expectation for the player
+# print("Player ELO:", player_analysis.elo)
+# print("Player Expectation:", player_analysis.expectation)
+#
+# # Update the player's ELO based on actual performance score
+# updated_player_elo = player_analysis.update_elo(actual_score=0.5, weight=0.3)
+# print("Updated Player ELO:", updated_player_elo)

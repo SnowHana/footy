@@ -1,0 +1,148 @@
+2024-12-03 13:35:44,867 - INFO - Starting ELO update for 59811 games.
+2024-12-03 13:36:29,383 - INFO - Flushing 1000 player ELO updates to the database.
+2024-12-03 13:36:29,870 - INFO - Flushing 1025 player ELO updates to the database.
+2024-12-03 13:36:30,081 - INFO - Flushing 1033 player ELO updates to the database.
+2024-12-03 13:36:30,278 - INFO - Batch completed. Processed 100 games.
+2024-12-03 13:37:11,619 - INFO - Flushing 1015 player ELO updates to the database.
+2024-12-03 13:37:11,798 - INFO - Flushing 1027 player ELO updates to the database.
+2024-12-03 13:37:11,960 - INFO - Flushing 1027 player ELO updates to the database.
+2024-12-03 13:37:12,083 - INFO - Batch completed. Processed 100 games.
+2024-12-03 13:37:12,084 - INFO - Processed 200 games. Exiting...
+2024-12-03 15:10:15,318 - INFO - Starting ELO update for 10 games.
+2024-12-03 15:10:21,651 - INFO - Batch completed. Processed 10 games.
+2024-12-03 15:10:21,652 - INFO - Flushing 300 player ELO updates to the database.
+2024-12-03 15:12:14,808 - INFO - Starting ELO update for 10 games.
+2024-12-03 15:12:14,809 - INFO - START: (2284485, '2013-02-14') - END: (2231554, '2013-02-15')
+2024-12-03 15:12:21,543 - INFO - Batch completed. Processed 10 games.
+2024-12-03 15:12:21,543 - INFO - Flushing 275 player ELO updates to the database.
+2024-12-03 15:13:04,000 - INFO - Starting ELO update for 500 games.
+2024-12-03 15:13:04,000 - INFO - START: (2240154, '2013-02-15') - END: (2244111, '2013-03-15')
+2024-12-03 15:13:48,954 - INFO - Flushing 1030 player ELO updates to the database.
+2024-12-03 15:13:49,208 - INFO - Flushing 1019 player ELO updates to the database.
+2024-12-03 15:13:49,446 - INFO - Flushing 1025 player ELO updates to the database.
+2024-12-03 15:13:49,571 - INFO - Batch completed. Processed 100 games.
+2024-12-03 15:14:35,856 - INFO - Flushing 1027 player ELO updates to the database.
+2024-12-03 15:14:36,141 - INFO - Flushing 1017 player ELO updates to the database.
+2024-12-03 15:14:36,432 - INFO - Flushing 1008 player ELO updates to the database.
+2024-12-03 15:14:36,568 - INFO - Batch completed. Processed 100 games.
+2024-12-03 15:15:17,282 - INFO - Flushing 1003 player ELO updates to the database.
+2024-12-03 15:15:17,447 - INFO - Flushing 1025 player ELO updates to the database.
+2024-12-03 15:15:17,636 - INFO - Flushing 1028 player ELO updates to the database.
+2024-12-03 15:15:17,782 - INFO - Batch completed. Processed 100 games.
+2024-12-03 15:15:59,327 - INFO - Flushing 1022 player ELO updates to the database.
+2024-12-03 15:15:59,670 - INFO - Flushing 1017 player ELO updates to the database.
+2024-12-03 15:15:59,826 - INFO - Flushing 1030 player ELO updates to the database.
+2024-12-03 15:15:59,989 - INFO - Batch completed. Processed 100 games.
+2024-12-03 15:16:40,858 - INFO - Flushing 1025 player ELO updates to the database.
+2024-12-03 15:16:41,013 - INFO - Flushing 1004 player ELO updates to the database.
+2024-12-03 15:16:41,205 - INFO - Flushing 1013 player ELO updates to the database.
+2024-12-03 15:16:41,357 - INFO - Batch completed. Processed 100 games.
+2024-12-03 15:16:41,357 - INFO - Flushing 789 player ELO updates to the database.
+2024-12-21 17:51:52,446 - INFO - Starting ELO update for 100 games.
+2024-12-21 17:51:52,449 - INFO - START: (2250402, '2013-03-15') - END: (2289292, '2013-03-17')
+2024-12-21 17:52:16,107 - INFO - Flushing 1023 player ELO updates to the database.
+2024-12-21 17:52:16,289 - INFO - Flushing 1030 player ELO updates to the database.
+2024-12-21 17:52:16,390 - INFO - Flushing 1025 player ELO updates to the database.
+2024-12-21 17:52:16,470 - INFO - Batch completed. Processed 100 games.
+2024-12-21 17:52:16,470 - INFO - Flushing 235 player ELO updates to the database.
+2024-12-21 22:31:09,104 - INFO - Starting ELO update for 100 games.
+2024-12-21 22:31:09,105 - INFO - START: (2289293, '2013-03-17') - END: (2250416, '2013-03-31')
+2024-12-21 22:31:41,154 - INFO - Flushing 1015 player ELO updates to the database.
+2024-12-21 22:31:41,289 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-21 22:31:41,405 - INFO - Flushing 1022 player ELO updates to the database.
+2024-12-21 22:31:41,423 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x10cff79b0>: pipeline aborted
+2024-12-21 22:31:41,424 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-21 22:31:41,442 - INFO - Flushing 1016 player ELO updates to the database.
+2024-12-21 22:31:41,465 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-21 22:31:41,508 - INFO - Batch completed. Processed 100 games.
+2024-12-21 22:31:41,509 - INFO - Flushing 228 player ELO updates to the database.
+2024-12-21 22:31:41,526 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x113380800>: pipeline aborted
+2024-12-21 22:31:41,527 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:03,234 - INFO - Starting ELO update for 100 games.
+2024-12-22 01:18:03,235 - INFO - START: (2250417, '2013-03-31') - END: (2224714, '2013-04-07')
+2024-12-22 01:18:57,655 - INFO - Flushing 1046 player ELO updates to the database.
+2024-12-22 01:18:57,723 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x10ca51640>: pipeline aborted
+2024-12-22 01:18:57,724 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,784 - INFO - Flushing 1042 player ELO updates to the database.
+2024-12-22 01:18:57,840 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,852 - INFO - Flushing 1048 player ELO updates to the database.
+2024-12-22 01:18:57,867 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x10cb63ce0>: pipeline aborted
+2024-12-22 01:18:57,868 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,929 - INFO - Flushing 1048 player ELO updates to the database.
+2024-12-22 01:18:57,950 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x112f40950>: pipeline aborted
+2024-12-22 01:18:57,951 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,964 - INFO - Flushing 1014 player ELO updates to the database.
+2024-12-22 01:18:57,983 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x112f41250>: pipeline aborted
+2024-12-22 01:18:57,983 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:57,994 - INFO - Flushing 1048 player ELO updates to the database.
+2024-12-22 01:18:58,011 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-22 01:18:58,017 - INFO - Batch completed. Processed 100 games.
+2024-12-22 01:18:58,017 - INFO - Flushing 340 player ELO updates to the database.
+2024-12-22 01:18:58,034 - WARNING - error ignored terminating <psycopg.Pipeline [INERROR, pipeline=ON] (host=localhost user=postgres database=football) at 0x112f400e0>: pipeline aborted
+2024-12-22 01:18:58,035 - ERROR - Error flushing player ELO updates: there is no unique or exclusion constraint matching the ON CONFLICT specification
+Traceback (most recent call last):
+  File "/Users/nautilus/projects/footy/src/player_elo/elo_updater.py", line 175, in _flush_player_elo_updates
+    cur.executemany(
+  File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
+    raise ex.with_traceback(None)
+psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification

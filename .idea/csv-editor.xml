@@ -108,6 +108,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/src/data/transfer_data/players_elo_copy.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/src/data/transfer_data/transfers.csv">
           <value>
             <Attribute>
