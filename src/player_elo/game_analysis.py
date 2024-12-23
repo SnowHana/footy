@@ -73,7 +73,7 @@ class GameAnalysis:
         self.home_club_id, self.away_club_id, game_date = result
 
         # Some formatting and initialising.
-        self._date = datetime.strptime(game_date, "%Y-%m-%d")
+        self._date = datetime.strptime(str(game_date), "%Y-%m-%d")
         self._season = self._date.year
         # self._players = {self.home_club_id: [], self.away_club_id: []}
         # self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
@@ -238,7 +238,7 @@ class GameAnalysis:
                 club_ratings[club_id] = total_rating[club_id] / total_playtime[club_id]
             else:
                 # Play time is 0...related to dataset being incomplete. Return defualt ELO?
-                club_ratings[club_id] = self.DEFUALT_ELO
+                club_ratings[club_id] = self.DEFAULT_ELO
 
         return club_ratings
 

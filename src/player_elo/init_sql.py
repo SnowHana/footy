@@ -376,6 +376,8 @@ def main():
             count = result.scalar()
             print(f"Table '{table_name}' has {count} rows.")
 
+
+
     # Create process_progress table
     create_process_table(engine)
 

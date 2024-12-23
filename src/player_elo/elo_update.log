@@ -146,3 +146,19 @@ Traceback (most recent call last):
   File "/Users/nautilus/projects/footy/venv/lib/python3.12/site-packages/psycopg/cursor.py", line 128, in executemany
     raise ex.with_traceback(None)
 psycopg.errors.InvalidColumnReference: there is no unique or exclusion constraint matching the ON CONFLICT specification
+2024-12-23 10:31:06,966 - INFO - Starting ELO update for 500 games.
+2024-12-23 10:31:06,966 - INFO - START: (2231978, datetime.date(2012, 7, 3)) - END: (2254932, datetime.date(2012, 8, 23))
+2024-12-23 10:31:09,322 - INFO - Batch completed. Processed 100 games.
+2024-12-23 10:31:11,284 - INFO - Batch completed. Processed 100 games.
+2024-12-23 10:31:13,186 - INFO - Batch completed. Processed 100 games.
+2024-12-23 10:31:15,110 - INFO - Batch completed. Processed 100 games.
+2024-12-23 10:31:17,106 - INFO - Batch completed. Processed 100 games.
+2024-12-23 10:39:20,405 - INFO - Starting ELO update for 100 games.
+2024-12-23 10:39:20,406 - INFO - START: (2231978, datetime.date(2012, 7, 3)) - END: (2240717, datetime.date(2012, 7, 24))
+2024-12-23 10:39:54,509 - INFO - Flushing 1000 player ELO updates to the database.
+2024-12-23 10:39:54,857 - INFO - Batch completed. Processed 100 games.
+2024-12-23 10:39:54,857 - INFO - Flushing 862 player ELO updates to the database.
+2024-12-23 10:40:11,453 - INFO - Starting ELO update for 1000 games.
+2024-12-23 10:40:11,453 - INFO - START: (2244351, datetime.date(2012, 7, 24)) - END: (2231412, datetime.date(2012, 9, 25))
+2024-12-23 10:40:40,911 - INFO - Flushing 1020 player ELO updates to the database.
+2024-12-23 10:40:41,120 - INFO - Batch completed. Processed 100 games.

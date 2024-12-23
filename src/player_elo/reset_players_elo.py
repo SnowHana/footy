@@ -89,38 +89,6 @@ class PlayersEloReinitialiser:
         self.cur.connection.commit()
         print("Player ELO initialized based on market value.")
 
-    # def init_player_elo_with_value(self):
-    #     """Initialize ELO based on market value for each player per season using SQL."""
-    #     print("Updating player ELO based on market value...")
-    #     self.cur.execute("""
-    #         SELECT COUNT(*)
-    #         FROM players_elo
-    #         WHERE elo IS NULL;
-    #     """)
-    #     print("Rows with NULL ELO: ", self.cur.fetchone())
-    #
-    #     # Initialize ELO based on z-score calculation
-    #     self.cur.execute(f"""
-    #         UPDATE players_elo
-    #         SET elo = {self.base_elo} + (
-    #             (LOG(1 + pv.market_value_in_eur) - sv.mean_log) / NULLIF(sv.std_log, 0)
-    #             * {self.elo_range / 2}
-    #         )
-    #         FROM player_valuations pv
-    #         JOIN season_valuations sv ON EXTRACT(YEAR FROM pv.date::date) = sv.season
-    #         WHERE players_elo.player_id = pv.player_id
-    #         AND players_elo.season = EXTRACT(YEAR FROM pv.date::date)
-    #         AND players_elo.elo IS NULL;
-    #     """)
-    #     print("Player ELO update executed. Verifying changes...")
-    #     self.cur.execute("""
-    #         SELECT player_id, season, elo
-    #         FROM players_elo
-    #         WHERE elo IS NOT NULL
-    #         ORDER BY elo DESC
-    #         LIMIT 10;
-    #     """)
-    #     print("Top updated ELOs: ", self.cur.fetchall())
 
     def init_all_players_elo(self):
         """Main function to initialize all player ELOs."""
@@ -149,6 +117,27 @@ class PlayersEloReinitialiser:
         self.cur.connection.commit()
         print("Changes committed to the database.")
 
+    def reset_process_progress(self):
+        self.cur.execute(f"""
+                INSERT INTO process_progress (
+            process_name,
+            last_processed_date,
+            last_processed_game_id
+        )
+        VALUES (
+            'elo_update',
+            NULL,
+            NULL
+        )
+        ON CONFLICT (process_name)
+        DO UPDATE
+            SET last_processed_date = EXCLUDED.last_processed_date,
+                last_processed_game_id = EXCLUDED.last_processed_game_id;
+        """)
+
+        self.cur.connection.commit()
+        print("Process Progress reset is completed.")
+
 
 # Usage
 if __name__ == "__main__":
@@ -158,5 +147,6 @@ if __name__ == "__main__":
             elo_range = int(input("Enter ELO range: (Default 500) ").strip() or 500)
             elo_reinit = PlayersEloReinitialiser(cur, base_elo, elo_range)
             elo_reinit.init_all_players_elo()
+            elo_reinit.reset_process_progress()
 
             # elo_reinit.reset_elo_column()

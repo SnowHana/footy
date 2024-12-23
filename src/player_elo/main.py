@@ -11,6 +11,7 @@ def reset_players_elo():
         print("\nResetting Players ELO table...")
         # subprocess.run(["python", "init_player_elo.py"], check=True)
         subprocess.run(["python", "reset_players_elo.py"], check=True)
+
         print("Players ELO Table reset successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during database reset: {e}\n")
@@ -24,6 +25,7 @@ def reset_db():
         print("\nResetting database...")
         # subprocess.run(["python", "init_player_elo.py"], check=True)
         subprocess.run(["python", "init_sql.py"], check=True)
+        subprocess.run(["python", "game_validator.py"], check=True)
         # subprocess.run(["python", "reset_players_elo.py"], check=True)
         # reset_players_elo()
         print("Database reset successfully!\n")
@@ -50,7 +52,7 @@ def main():
     while True:
         print("\nFootball Database Management Tool")
         print("1. Reset Database : Delete and Create whole SQL DB from scratch. "
-              "(Takes up to 10min, don't do this process unless you HAVE TO.)")
+              "(Takes up to 3min, don't do this process unless you HAVE TO.)")
         print("2. Reset Players ELO : Re-init. players ELO (Takes less than a minute)")
         print("3. Run Analysis : Continue on analysing ELO.")
         print("4. Exit")
