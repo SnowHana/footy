@@ -114,6 +114,9 @@ class EloUpdater:
                     # players = [player for club_players_list in game_analysis.players.values() for player in
                     #            club_players_list]
                     for player_id in game_analysis.players_list:
+                        # TODO: We have a case where player_id is null?
+                        if player_id is None:
+                            logging.error(f"Game {game_id} contains a player with NULL player id.")
                         player_analysis = PlayerAnalysis(game_analysis, player_id)
                         team_change = new_home_club_elo if player_analysis.club_id == game_analysis.home_club_id else new_away_club_elo
                         new_player_elo = player_analysis.new_elo(team_change)
@@ -151,6 +154,7 @@ class EloUpdater:
             for result in results:
                 if result:
                     game_id, game_date, player_elo_updates = result
+
                     all_player_elo_updates.extend(player_elo_updates)
                     self._update_progress(game_date, game_id)
                     self.games_processed += 1
@@ -172,6 +176,12 @@ class EloUpdater:
         try:
             with DatabaseConnection(DATABASE_CONFIG) as conn:
                 with conn.cursor() as cur:
+                    # Error checking
+                    # player_id, _ = player_elo_updates
+                    # if player_id is None:
+                    #     logging.error(f"Player ID is Null for {player_elo_updates}")
+                    #     exit()
+
                     cur.executemany(
                         """
                         INSERT INTO players_elo (player_id, season, elo)
