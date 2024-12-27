@@ -1,16 +1,17 @@
 import subprocess
+from pathlib import Path
+import sys
 
 
 def reset_players_elo():
     """
     Resets the players ELO table of Postgresql DB
-    @return:
     """
+    # Build the absolute path to init_player_elo.py
+    script_path = Path(__file__).parent / "player_elo" / "init_player_elo.py"
     try:
         print("\nResetting Players ELO table...")
-        # subprocess.run(["python", "init_player_elo.py"], check=True)
-        subprocess.run(["python", "reset_players_elo.py"], check=True)
-
+        subprocess.run([sys.executable, str(script_path)], check=True)
         print("Players ELO Table reset successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during database reset: {e}\n")
@@ -20,25 +21,24 @@ def reset_db():
     """
     Function to reset the database by executing necessary scripts.
     """
+    script_init_path = Path(__file__).parent / "player_elo" / "init_player_elo.py"
+    script_reset_path = Path(__file__).parent / "player_elo" / "reset_players_elo.py"
     try:
         print("\nResetting database...")
-        # subprocess.run(["python", "init_player_elo.py"], check=True)
-        subprocess.run(["python", "init_sql.py"], check=True)
-        subprocess.run(["python", "game_validator.py"], check=True)
-        # subprocess.run(["python", "reset_players_elo.py"], check=True)
-        # reset_players_elo()
+        subprocess.run([sys.executable, str(script_init_path)], check=True)
+        subprocess.run([sys.executable, str(script_reset_path)], check=True)
         print("Database reset successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during database reset: {e}\n")
 
 
 def run_analysis():
-    """
-    Function to run the analysis by executing the analysis script.
-    """
     try:
         print("\nRunning analysis...")
-        subprocess.run(["python", "elo_updater.py"], check=True)
+        # Use the module path "footy.player_elo.elo_updater" instead of a .py file
+        subprocess.run(
+            [sys.executable, "-m", "footy.player_elo.elo_updater"], check=True
+        )
         print("Analysis completed successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during analysis: {e}\n")
@@ -50,8 +50,10 @@ def main():
     """
     while True:
         print("\nFootball Database Management Tool")
-        print("1. Reset Database : Delete and Create whole SQL DB from scratch. "
-              "(Takes up to 3min, don't do this process unless you HAVE TO.)")
+        print(
+            "1. Reset Database : Delete and Create whole SQL DB from scratch. "
+            "(Takes up to 3min, don't do this process unless you HAVE TO.)"
+        )
         print("2. Reset Players ELO : Re-init. players ELO (Takes less than a minute)")
         print("3. Run Analysis : Continue on analysing ELO.")
         print("4. Exit")
@@ -60,7 +62,7 @@ def main():
 
         if choice == "1":
             confirm = input("Do you really want to reset database? (y/n): ").strip()
-            if confirm == "y":
+            if confirm.lower() == "y":
                 reset_db()
             else:
                 print("Exiting...")

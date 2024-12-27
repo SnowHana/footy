@@ -1,5 +1,5 @@
-from src.player_elo.base_analysis import BaseAnalysis
-from src.player_elo.game_analysis import GameAnalysis
+from .base_analysis import BaseAnalysis
+from .game_analysis import GameAnalysis
 
 
 class ClubAnalysis(BaseAnalysis):
@@ -21,7 +21,10 @@ class ClubAnalysis(BaseAnalysis):
     def _get_goal_difference(self) -> int:
         goals_for = len(self.game_analysis.goals_per_club[self.entity_id])
         opponent_id = (
-            self.game_analysis.home_club_id if self.entity_id == self.game_analysis.away_club_id else self.game_analysis.away_club_id)
+            self.game_analysis.home_club_id
+            if self.entity_id == self.game_analysis.away_club_id
+            else self.game_analysis.away_club_id
+        )
         goals_against = len(self.game_analysis.goals_per_club[opponent_id])
         return goals_for - goals_against
 
@@ -33,8 +36,10 @@ class ClubAnalysis(BaseAnalysis):
         Get Opponent Club's id
         """
         opponent_id = (
-            self.game_analysis.home_club_id if self.entity_id == self.game_analysis.away_club_id
-            else self.game_analysis.away_club_id)
+            self.game_analysis.home_club_id
+            if self.entity_id == self.game_analysis.away_club_id
+            else self.game_analysis.away_club_id
+        )
         return opponent_id
 
     def new_elo(self) -> float:

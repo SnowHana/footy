@@ -1,4 +1,4 @@
-from src.player_elo.database_connection import DatabaseConnection
+from .database_connection import DatabaseConnection
 
 
 class GameValidator:
@@ -28,7 +28,8 @@ class GameValidator:
         """
         try:
             with self.conn.cursor() as cur:
-                cur.execute("""
+                cur.execute(
+                    """
                     DO $$
                     BEGIN
                         IF NOT EXISTS (
@@ -42,7 +43,8 @@ class GameValidator:
                         END IF; 
                     END
                     $$;
-                """)
+                """
+                )
                 self.conn.commit()
                 print("Ensured `valid_games` table exists.")
         except Exception as e:
@@ -73,7 +75,8 @@ class GameValidator:
         """
         try:
             with self.conn.cursor() as cur:
-                cur.execute("""
+                cur.execute(
+                    """
                     WITH valid_games_batch AS (
                         SELECT g.*
                         FROM games g
@@ -87,7 +90,9 @@ class GameValidator:
                     INSERT INTO valid_games
                     SELECT * FROM valid_games_batch
                     ON CONFLICT (game_id) DO NOTHING;
-                """, (game_ids,))
+                """,
+                    (game_ids,),
+                )
                 self.conn.commit()
                 print(f"Validated and inserted batch of {len(game_ids)} games.")
         except Exception as e:
