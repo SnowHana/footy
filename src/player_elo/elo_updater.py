@@ -59,10 +59,14 @@ class EloUpdater:
     def fetch_games_to_process(self):
         """
         Fetch the list of games to process.
-        @return: None
+        @return:
         """
         last_processed_date, last_processed_game_id = self._get_last_processed_game()
 
+        self.cur.execute(f"""
+                            SELECT COUNT(*) FROM valid_games 
+                            WHERE game_id > {last_processed_game_id};""")
+        logging.info(f"Remaining games to analyse: {self.cur.fetchone()[0]}")
         if last_processed_date:
             # Continue from the last processed game
             self.cur.execute("""
@@ -81,7 +85,9 @@ class EloUpdater:
                     LIMIT %s;
                 """, (self.MAX_GAMES_TO_PROCESS,))
 
+
         return self.cur.fetchall()
+
 
     @staticmethod
     def process_game(game, db_config):
@@ -138,6 +144,8 @@ class EloUpdater:
         """
         logging.info(f"Starting ELO update for {len(games_to_process)} games.")
         logging.info(f"START: {games_to_process[0]} - END: {games_to_process[-1]}")
+
+        logging.info(f"ELO Updater start: {games_to_process[0]} games waiting for an analyse")
         all_player_elo_updates = []  # Accumulate all updates
 
         # Batching to improve performance
@@ -218,6 +226,7 @@ if __name__ == "__main__":
 
     with DatabaseConnection(DATABASE_CONFIG) as conn:
         with conn.cursor() as cur:
+
             elo_updater = EloUpdater(cur, max_games_to_process=process_game_num)
             games_to_process = elo_updater.fetch_games_to_process()
             elo_updater.update_elo_with_multiprocessing(DATABASE_CONFIG, games_to_process)
