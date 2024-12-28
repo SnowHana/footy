@@ -1,6 +1,7 @@
 pyproject.toml
 setup.py
 src/footy/__init__.py
+src/footy/gui_app.py
 src/footy/main.py
 src/footy.egg-info/PKG-INFO
 src/footy.egg-info/SOURCES.txt
