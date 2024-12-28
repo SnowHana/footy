@@ -1,8 +1,9 @@
 import subprocess
 import sys
 from pathlib import Path
-
-
+from footy.player_elo.reset_players_elo import reset_init_players_elo_db
+from footy.player_elo.init_sql import init_sql_db
+from footy.player_elo.elo_updater import update_elo
 
 def reset_db():
     """
@@ -18,7 +19,8 @@ def reset_db():
         print("\nResetting database...")
         # subprocess.run([sys.executable, str(script_init_path)], check=True)
         # Reset db
-
+        # reset_init_players_elo_db()
+        init_sql_db()
         # subprocess.run([sys.executable, str(script_reset_path)], check=True)
         print("Database reset successfully!\n")
     except ValueError as e:
@@ -33,7 +35,8 @@ def reset_players_elo():
     script_path = Path(__file__).parent / "player_elo" / "init_player_elo.py"
     try:
         print("\nResetting Players ELO table...")
-        subprocess.run([sys.executable, str(script_path)], check=True)
+        # subprocess.run([sys.executable, str(script_path)], check=True)
+        reset_init_players_elo_db()
         print("Players ELO Table reset successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during database reset: {e}\n")
@@ -42,10 +45,7 @@ def reset_players_elo():
 def run_analysis():
     try:
         print("\nRunning analysis...")
-        # Use the module path "footy.player_elo.elo_updater" instead of a .py file
-        subprocess.run(
-            [sys.executable, "-m", "footy.player_elo.elo_updater"], check=True
-        )
+        update_elo()
         print("Analysis completed successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during analysis: {e}\n")

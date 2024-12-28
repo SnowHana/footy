@@ -5,10 +5,10 @@ from logging.handlers import RotatingFileHandler
 from multiprocessing import Pool
 from pathlib import Path
 
-from .club_analysis import ClubAnalysis
-from .database_connection import DatabaseConnection, DATABASE_CONFIG
-from .game_analysis import GameAnalysis
-from .player_analysis import PlayerAnalysis
+from footy.player_elo.club_analysis import ClubAnalysis
+from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG, DATA_DIR
+from footy.player_elo.game_analysis import GameAnalysis
+from footy.player_elo.player_analysis import PlayerAnalysis
 
 # Add the src directory to sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -240,9 +240,7 @@ class EloUpdater:
         except Exception as e:
             logging.error(f"Error flushing player ELO updates: {e}", exc_info=True)
 
-
-# Main execution
-if __name__ == "__main__":
+def update_elo():
     log_file = "elo_update.log"
     logging.basicConfig(
         level=logging.INFO,
@@ -271,3 +269,8 @@ if __name__ == "__main__":
             elo_updater.update_elo_with_multiprocessing(
                 DATABASE_CONFIG, games_to_process
             )
+
+
+# Main execution
+if __name__ == "__main__":
+    update_elo()

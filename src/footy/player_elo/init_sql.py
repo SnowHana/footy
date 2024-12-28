@@ -383,7 +383,7 @@ def create_process_table(engine):
             raise
 
 
-def main():
+def init_sql_db():
     data_dir = DATA_DIR
 
     # Drop existing tables
@@ -406,4 +406,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    init_sql_db()

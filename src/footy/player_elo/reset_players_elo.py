@@ -1,5 +1,6 @@
 from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
 
+
 # Constants
 # BASE_ELO = 1500
 # ELO_RANGE = 300
@@ -151,7 +152,8 @@ class PlayersEloReinitialiser:
         self.cur.connection.commit()
         print("Process Progress reset is completed.")
 
-def reset_players_elo():
+
+def reset_init_players_elo_db():
     """
     Reset players ELO table and process_progress table in PostgrSQL Database
     """
@@ -164,9 +166,8 @@ def reset_players_elo():
             elo_reinit.reset_process_progress()
 
 
-
 # Usage
 if __name__ == "__main__":
-    reset_players_elo()
+    reset_init_players_elo_db()
 
-            # elo_reinit.reset_elo_column()
+    # elo_reinit.reset_elo_column()

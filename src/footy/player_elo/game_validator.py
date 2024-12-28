@@ -1,4 +1,4 @@
-from .database_connection import DatabaseConnection
+from footy.player_elo.database_connection import DatabaseConnection
 
 
 class GameValidator:

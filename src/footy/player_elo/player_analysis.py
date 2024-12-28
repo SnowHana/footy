@@ -1,7 +1,7 @@
 import logging
 
-from .base_analysis import BaseAnalysis
-from .game_analysis import GameAnalysis
+from footy.player_elo.base_analysis import BaseAnalysis
+from footy.player_elo.game_analysis import GameAnalysis
 
 
 class PlayerAnalysis(BaseAnalysis):

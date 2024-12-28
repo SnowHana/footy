@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 
 from psycopg import sql
 
-from .database_connection import DatabaseConnection, DATABASE_CONFIG
+from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
 
 # Typing
 ClubGoals = Dict[int, List[int]]

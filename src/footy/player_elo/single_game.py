@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime
 
-from .club_analysis import ClubAnalysis
-from .database_connection import DatabaseConnection, DATABASE_CONFIG
-from .game_analysis import GameAnalysis
-from .player_analysis import PlayerAnalysis
+from footy.player_elo.club_analysis import ClubAnalysis
+from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
+from footy.player_elo.game_analysis import GameAnalysis
+from footy.player_elo.player_analysis import PlayerAnalysis
 
 
 def process_game(game, db_config):
