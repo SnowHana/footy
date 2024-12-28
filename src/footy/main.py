@@ -1,9 +1,11 @@
 import subprocess
 import sys
 from pathlib import Path
+from footy.player_elo.game_validator import validate_games
 from footy.player_elo.reset_players_elo import reset_init_players_elo_db
 from footy.player_elo.init_sql import init_sql_db
 from footy.player_elo.elo_updater import update_elo
+
 
 def reset_db():
     """
@@ -12,15 +14,14 @@ def reset_db():
     # init_player_elo.py creates a csv file called player_elo.csv,
     # which had to be runned only ONCE, for entire development! So we don't have to run it again
     # when program is actually used.
-    # script_init_path = Path(__file__).parent / "player_elo" / "init_player_elo.py"
 
-    script_reset_path = Path(__file__).parent / "player_elo" / "reset_players_elo.py"
     try:
         print("\nResetting database...")
         # subprocess.run([sys.executable, str(script_init_path)], check=True)
         # Reset db
         # reset_init_players_elo_db()
         init_sql_db()
+        validate_games()
         # subprocess.run([sys.executable, str(script_reset_path)], check=True)
         print("Database reset successfully!\n")
     except ValueError as e:
@@ -32,7 +33,6 @@ def reset_players_elo():
     Resets the players ELO table of Postgresql DB
     """
     # Build the absolute path to init_player_elo.py
-    script_path = Path(__file__).parent / "player_elo" / "init_player_elo.py"
     try:
         print("\nResetting Players ELO table...")
         # subprocess.run([sys.executable, str(script_path)], check=True)
@@ -51,7 +51,7 @@ def run_analysis():
         print(f"Error during analysis: {e}\n")
 
 
-def main():
+def start_app():
     """
     Main function to display menu and handle user input.
     """
@@ -85,4 +85,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    start_app()

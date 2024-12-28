@@ -111,10 +111,15 @@ class GameValidator:
         print("Validation complete.")
 
 
-# Usage
-if __name__ == "__main__":
-    from src.player_elo.database_connection import DATABASE_CONFIG
+def validate_games():
+
+    from footy.player_elo.database_connection import DATABASE_CONFIG
 
     with DatabaseConnection(DATABASE_CONFIG) as conn:
         validator = GameValidator(conn)
         validator.add_valid_games()
+
+
+# Usage
+if __name__ == "__main__":
+    validate_games()
