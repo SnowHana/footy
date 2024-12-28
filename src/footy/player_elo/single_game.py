@@ -1,15 +1,10 @@
+import logging
 from datetime import datetime
-from logging.handlers import RotatingFileHandler
 
 from .club_analysis import ClubAnalysis
 from .database_connection import DatabaseConnection, DATABASE_CONFIG
 from .game_analysis import GameAnalysis
 from .player_analysis import PlayerAnalysis
-import logging
-import sys
-from pathlib import Path
-from multiprocessing import Pool
-from functools import partial
 
 
 def process_game(game, db_config):

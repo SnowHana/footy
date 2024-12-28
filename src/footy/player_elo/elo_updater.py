@@ -1,14 +1,14 @@
+import logging
+import sys
+from functools import partial
 from logging.handlers import RotatingFileHandler
+from multiprocessing import Pool
+from pathlib import Path
 
 from .club_analysis import ClubAnalysis
 from .database_connection import DatabaseConnection, DATABASE_CONFIG
 from .game_analysis import GameAnalysis
 from .player_analysis import PlayerAnalysis
-import logging
-import sys
-from pathlib import Path
-from multiprocessing import Pool
-from functools import partial
 
 # Add the src directory to sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent

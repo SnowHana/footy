@@ -1,13 +1,17 @@
+from pathlib import Path
 from typing import Dict
 
 import psycopg
 
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+
+
 DATABASE_CONFIG = {
-    'dbname': 'football',
-    'user': 'postgres',
-    'password': '1234',
-    'host': 'localhost',
-    'port': '5432'
+    "dbname": "football",
+    "user": "postgres",
+    "password": "1234",
+    "host": "localhost",
+    "port": "5432",
 }
 
 

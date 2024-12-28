@@ -1,6 +1,28 @@
 import subprocess
-from pathlib import Path
 import sys
+from pathlib import Path
+
+
+
+def reset_db():
+    """
+    Function to reset the database by executing necessary scripts.
+    """
+    # init_player_elo.py creates a csv file called player_elo.csv,
+    # which had to be runned only ONCE, for entire development! So we don't have to run it again
+    # when program is actually used.
+    # script_init_path = Path(__file__).parent / "player_elo" / "init_player_elo.py"
+
+    script_reset_path = Path(__file__).parent / "player_elo" / "reset_players_elo.py"
+    try:
+        print("\nResetting database...")
+        # subprocess.run([sys.executable, str(script_init_path)], check=True)
+        # Reset db
+
+        # subprocess.run([sys.executable, str(script_reset_path)], check=True)
+        print("Database reset successfully!\n")
+    except ValueError as e:
+        print(f"Error during database reset: {e}\n")
 
 
 def reset_players_elo():
@@ -13,21 +35,6 @@ def reset_players_elo():
         print("\nResetting Players ELO table...")
         subprocess.run([sys.executable, str(script_path)], check=True)
         print("Players ELO Table reset successfully!\n")
-    except subprocess.CalledProcessError as e:
-        print(f"Error during database reset: {e}\n")
-
-
-def reset_db():
-    """
-    Function to reset the database by executing necessary scripts.
-    """
-    script_init_path = Path(__file__).parent / "player_elo" / "init_player_elo.py"
-    script_reset_path = Path(__file__).parent / "player_elo" / "reset_players_elo.py"
-    try:
-        print("\nResetting database...")
-        subprocess.run([sys.executable, str(script_init_path)], check=True)
-        subprocess.run([sys.executable, str(script_reset_path)], check=True)
-        print("Database reset successfully!\n")
     except subprocess.CalledProcessError as e:
         print(f"Error during database reset: {e}\n")
 

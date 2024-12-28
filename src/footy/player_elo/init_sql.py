@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from typing import Dict
+from footy.player_elo.database_connection import DATA_DIR, DATABASE_CONFIG
 
 # Make sure your environment uses psycopg 3, e.g. 'psycopg==3.1.8'
 # and your SQLAlchemy URL is 'postgresql+psycopg://...' not 'psycopg2'
@@ -16,12 +17,11 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.orm import declarative_base
-from psycopg import sql  # psycopg 3
-from .database_connection import DATABASE_CONFIG
+
 
 # Data dir
 BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR.parents[0] / "data" / "transfer_data"
+DATA_DIR /= "transfer_data"
 
 
 def create_sqlalchemy_engine(config: Dict[str, str]):

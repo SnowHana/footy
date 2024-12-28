@@ -1,8 +1,6 @@
 import logging
 
 from .base_analysis import BaseAnalysis
-from .club_analysis import ClubAnalysis
-from .database_connection import DatabaseConnection, DATABASE_CONFIG
 from .game_analysis import GameAnalysis
 
 

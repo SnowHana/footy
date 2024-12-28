@@ -1,7 +1,9 @@
 import json
 from datetime import datetime
 from typing import Dict, List, Tuple
+
 from psycopg import sql
+
 from .database_connection import DatabaseConnection, DATABASE_CONFIG
 
 # Typing
