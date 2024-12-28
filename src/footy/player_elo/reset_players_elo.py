@@ -1,4 +1,5 @@
-from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
+from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
+
 
 # Constants
 # BASE_ELO = 1500
@@ -23,10 +24,12 @@ class PlayersEloReinitialiser:
     def reset_elo_column(self):
         """Reset the ELO column for all players in the players_elo table."""
         print("Resetting ELO column...")
-        self.cur.execute("""
+        self.cur.execute(
+            """
             UPDATE players_elo
             SET elo = NULL;
-        """)
+        """
+        )
 
         self.cur.connection.commit()
         print("ELO column reset successfully.")
@@ -34,7 +37,8 @@ class PlayersEloReinitialiser:
     def init_season_valuations(self):
         """Calculate mean and std of player valuations per season, storing in SQL for fast access."""
         # Calculate mean and std of log-transformed values for each season and store them in a new table
-        self.cur.execute("""
+        self.cur.execute(
+            """
             DROP TABLE IF EXISTS season_valuations;
             CREATE TABLE season_valuations AS
             SELECT 
@@ -43,7 +47,8 @@ class PlayersEloReinitialiser:
                 STDDEV(LOG(1 + p.market_value_in_eur)) AS std_log
             FROM player_valuations p
             GROUP BY season;
-        """)
+        """
+        )
 
         self.cur.connection.commit()
         print("Season valuations initialized.")
@@ -51,7 +56,8 @@ class PlayersEloReinitialiser:
     def fill_season_gaps(self):
         """Fill missing seasons for each player directly in SQL."""
         # Using a recursive CTE to generate continuous seasons for each player
-        self.cur.execute("""
+        self.cur.execute(
+            """
             WITH RECURSIVE seasons AS (
                 SELECT DISTINCT player_id, season AS min_season, season AS max_season
                 FROM players_elo
@@ -65,7 +71,8 @@ class PlayersEloReinitialiser:
             FROM seasons s
             LEFT JOIN players_elo p ON s.player_id = p.player_id AND s.min_season = p.season
             WHERE p.season IS NULL;
-        """)
+        """
+        )
 
         self.cur.connection.commit()
         print("Season gaps filled for players.")
@@ -73,7 +80,8 @@ class PlayersEloReinitialiser:
     def init_player_elo_with_value(self):
         """Initialize ELO based on market value for each player per season using SQL."""
         # Initialize ELO based on z-score calculation
-        self.cur.execute(f"""
+        self.cur.execute(
+            f"""
             UPDATE players_elo
             SET elo = {self.base_elo} + (
                 (LOG(1 + pv.market_value_in_eur) - sv.mean_log) / NULLIF(sv.std_log, 0)
@@ -84,11 +92,11 @@ class PlayersEloReinitialiser:
             WHERE players_elo.player_id = pv.player_id
             AND players_elo.season = EXTRACT(YEAR FROM pv.date::date)
             AND players_elo.elo IS NULL;
-        """)
+        """
+        )
 
         self.cur.connection.commit()
         print("Player ELO initialized based on market value.")
-
 
     def init_all_players_elo(self):
         """Main function to initialize all player ELOs."""
@@ -97,20 +105,24 @@ class PlayersEloReinitialiser:
         self.fill_season_gaps()
         self.init_player_elo_with_value()
         print("All player ELOs initialized.")
-        self.cur.execute(f"""
+        self.cur.execute(
+            f"""
             SELECT name, elo
             FROM players_elo
             WHERE elo IS NOT NULL
             ORDER BY elo DESC
-            LIMIT 1;""")
+            LIMIT 1;"""
+        )
         print("Maximum ELO: ", self.cur.fetchone())
 
-        self.cur.execute(f"""
+        self.cur.execute(
+            f"""
                     SELECT name, elo
                     FROM players_elo
                     WHERE elo IS NOT NULL
                     ORDER BY elo
-                    LIMIT 1;""")
+                    LIMIT 1;"""
+        )
         print("Minimum ELO: ", self.cur.fetchone())
 
         # Commit the transaction
@@ -118,7 +130,8 @@ class PlayersEloReinitialiser:
         print("Changes committed to the database.")
 
     def reset_process_progress(self):
-        self.cur.execute(f"""
+        self.cur.execute(
+            f"""
                 INSERT INTO process_progress (
             process_name,
             last_processed_date,
@@ -133,14 +146,17 @@ class PlayersEloReinitialiser:
         DO UPDATE
             SET last_processed_date = EXCLUDED.last_processed_date,
                 last_processed_game_id = EXCLUDED.last_processed_game_id;
-        """)
+        """
+        )
 
         self.cur.connection.commit()
         print("Process Progress reset is completed.")
 
 
-# Usage
-if __name__ == "__main__":
+def reset_init_players_elo_db():
+    """
+    Reset players ELO table and process_progress table in PostgrSQL Database
+    """
     with DatabaseConnection(DATABASE_CONFIG) as conn:
         with conn.cursor() as cur:
             base_elo = int(input("Enter Base ELO: (Default 2500) ").strip() or 2500)
@@ -149,4 +165,9 @@ if __name__ == "__main__":
             elo_reinit.init_all_players_elo()
             elo_reinit.reset_process_progress()
 
-            # elo_reinit.reset_elo_column()
+
+# Usage
+if __name__ == "__main__":
+    reset_init_players_elo_db()
+
+    # elo_reinit.reset_elo_column()

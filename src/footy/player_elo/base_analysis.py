@@ -2,7 +2,7 @@
 from abc import abstractmethod
 from typing import Dict
 
-from .game_analysis import GameAnalysis
+from footy.player_elo.game_analysis import GameAnalysis
 
 
 class BaseAnalysis:
@@ -10,11 +10,17 @@ class BaseAnalysis:
     Base class providing common ELO calculation and expectation methods for both Club and Player analysis.
     @todo: Decide like what exactly this class should do?
     """
+
     MINUTES_MAX = 90
 
-    def __init__(self, game_analysis: GameAnalysis, entity_id: int,
-                 k_value: float, q_value: float,
-                 weight: float = 1):
+    def __init__(
+        self,
+        game_analysis: GameAnalysis,
+        entity_id: int,
+        k_value: float,
+        q_value: float,
+        weight: float = 1,
+    ):
         """
         Initialize.
 
@@ -118,7 +124,7 @@ class BaseAnalysis:
             game_score=actual_score,
             weight=weight,
             goal_difference=goal_difference,
-            minutes_played=self._get_minutes_played()
+            minutes_played=self._get_minutes_played(),
         )
         self._elo += change
         return self._elo
@@ -153,9 +159,9 @@ class BaseAnalysis:
         """
         res = self.weight * (self.game_score - self.expectation)
         if self.goal_difference == 0:
-            res *= (self.minutes_played / self.MINUTES_MAX)
+            res *= self.minutes_played / self.MINUTES_MAX
         else:
-            res *= (abs(self.goal_difference) ** (1 / 3))
+            res *= abs(self.goal_difference) ** (1 / 3)
         return res
 
     @abstractmethod
@@ -174,8 +180,8 @@ class BaseAnalysis:
         """
         return {
             "elo": self.elo,
-            'expectation': self.expectation,
-            'game_score': self.game_score,
+            "expectation": self.expectation,
+            "game_score": self.game_score,
         }
 
     def print_summary(self):

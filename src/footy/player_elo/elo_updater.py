@@ -1,14 +1,14 @@
-from logging.handlers import RotatingFileHandler
-
-from src.player_elo.club_analysis import ClubAnalysis
-from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
-from src.player_elo.game_analysis import GameAnalysis
-from src.player_elo.player_analysis import PlayerAnalysis
 import logging
 import sys
-from pathlib import Path
-from multiprocessing import Pool
 from functools import partial
+from logging.handlers import RotatingFileHandler
+from multiprocessing import Pool
+from pathlib import Path
+
+from footy.player_elo.club_analysis import ClubAnalysis
+from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG, DATA_DIR
+from footy.player_elo.game_analysis import GameAnalysis
+from footy.player_elo.player_analysis import PlayerAnalysis
 
 # Add the src directory to sys.path
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,11 +33,13 @@ class EloUpdater:
         @return: (last_processed_date: Date, last_processed_game_id: int)
         @rtype: tuple (Date, Int)
         """
-        self.cur.execute("""
+        self.cur.execute(
+            """
             SELECT last_processed_date, last_processed_game_id
             FROM process_progress
             WHERE process_name = 'elo_update';
-        """)
+        """
+        )
         result = self.cur.fetchone()
         return result if result else (None, None)
 
@@ -49,37 +51,57 @@ class EloUpdater:
 
         @return: None
         """
-        self.cur.execute("""
+        self.cur.execute(
+            """
             UPDATE process_progress
             SET last_processed_date = %s, last_processed_game_id = %s
             WHERE process_name = 'elo_update';
-        """, (last_game_date, last_game_id))
+        """,
+            (last_game_date, last_game_id),
+        )
         self.cur.connection.commit()
 
     def fetch_games_to_process(self):
         """
         Fetch the list of games to process.
-        @return: None
+        @return:
         """
         last_processed_date, last_processed_game_id = self._get_last_processed_game()
 
+        self.cur.execute(
+            f"""
+                            SELECT COUNT(*) FROM valid_games 
+                            WHERE game_id > {last_processed_game_id};"""
+        )
+        logging.info(f"Remaining games to analyse: {self.cur.fetchone()[0]}")
         if last_processed_date:
             # Continue from the last processed game
-            self.cur.execute("""
+            self.cur.execute(
+                """
                     SELECT game_id, date 
                     FROM valid_games 
                     WHERE (date::DATE > %s::DATE OR (date::DATE = %s::DATE AND game_id > %s))
                     ORDER BY date, game_id ASC
                     LIMIT %s;
-                """, (last_processed_date, last_processed_date, last_processed_game_id, self.MAX_GAMES_TO_PROCESS))
+                """,
+                (
+                    last_processed_date,
+                    last_processed_date,
+                    last_processed_game_id,
+                    self.MAX_GAMES_TO_PROCESS,
+                ),
+            )
         else:
             # Start from scratch
-            self.cur.execute("""
+            self.cur.execute(
+                """
                     SELECT game_id, date 
                     FROM valid_games 
                     ORDER BY date, game_id ASC
                     LIMIT %s;
-                """, (self.MAX_GAMES_TO_PROCESS,))
+                """,
+                (self.MAX_GAMES_TO_PROCESS,),
+            )
 
         return self.cur.fetchall()
 
@@ -103,8 +125,12 @@ class EloUpdater:
                     game_analysis = GameAnalysis(cur, game_id=game_id)
 
                     # Club analysis
-                    home_club_analysis = ClubAnalysis(game_analysis, game_analysis.home_club_id)
-                    away_club_analysis = ClubAnalysis(game_analysis, game_analysis.away_club_id)
+                    home_club_analysis = ClubAnalysis(
+                        game_analysis, game_analysis.home_club_id
+                    )
+                    away_club_analysis = ClubAnalysis(
+                        game_analysis, game_analysis.away_club_id
+                    )
 
                     # Calculate new ELOs
                     new_home_club_elo = home_club_analysis.new_elo()
@@ -114,10 +140,21 @@ class EloUpdater:
                     # players = [player for club_players_list in game_analysis.players.values() for player in
                     #            club_players_list]
                     for player_id in game_analysis.players_list:
+                        # TODO: We have a case where player_id is null?
+                        if player_id is None:
+                            logging.error(
+                                f"Game {game_id} contains a player with NULL player id."
+                            )
                         player_analysis = PlayerAnalysis(game_analysis, player_id)
-                        team_change = new_home_club_elo if player_analysis.club_id == game_analysis.home_club_id else new_away_club_elo
+                        team_change = (
+                            new_home_club_elo
+                            if player_analysis.club_id == game_analysis.home_club_id
+                            else new_away_club_elo
+                        )
                         new_player_elo = player_analysis.new_elo(team_change)
-                        player_elo_updates.append((player_id, game_analysis.season, new_player_elo))
+                        player_elo_updates.append(
+                            (player_id, game_analysis.season, new_player_elo)
+                        )
 
             return game_id, game_date, player_elo_updates
 
@@ -135,10 +172,17 @@ class EloUpdater:
         """
         logging.info(f"Starting ELO update for {len(games_to_process)} games.")
         logging.info(f"START: {games_to_process[0]} - END: {games_to_process[-1]}")
+
+        logging.info(
+            f"ELO Updater start: {games_to_process[0]} games waiting for an analyse"
+        )
         all_player_elo_updates = []  # Accumulate all updates
 
         # Batching to improve performance
-        batches = [games_to_process[i:i + self.BATCH_SIZE] for i in range(0, len(games_to_process), self.BATCH_SIZE)]
+        batches = [
+            games_to_process[i : i + self.BATCH_SIZE]
+            for i in range(0, len(games_to_process), self.BATCH_SIZE)
+        ]
 
         for batch in batches:
             if self.games_processed >= self.MAX_GAMES_TO_PROCESS:
@@ -146,11 +190,14 @@ class EloUpdater:
                 return  # Exit after processing the maximum allowed games
 
             with Pool(processes=4) as pool:  # Adjust the number of processes
-                results = pool.map(partial(self.process_game, db_config=db_config), batch)
+                results = pool.map(
+                    partial(self.process_game, db_config=db_config), batch
+                )
 
             for result in results:
                 if result:
                     game_id, game_date, player_elo_updates = result
+
                     all_player_elo_updates.extend(player_elo_updates)
                     self._update_progress(game_date, game_id)
                     self.games_processed += 1
@@ -168,10 +215,18 @@ class EloUpdater:
 
     def _flush_player_elo_updates(self, player_elo_updates):
         """Flush player ELO updates to the database."""
-        logging.info(f"Flushing {len(player_elo_updates)} player ELO updates to the database.")
+        logging.info(
+            f"Flushing {len(player_elo_updates)} player ELO updates to the database."
+        )
         try:
             with DatabaseConnection(DATABASE_CONFIG) as conn:
                 with conn.cursor() as cur:
+                    # Error checking
+                    # player_id, _ = player_elo_updates
+                    # if player_id is None:
+                    #     logging.error(f"Player ID is Null for {player_elo_updates}")
+                    #     exit()
+
                     cur.executemany(
                         """
                         INSERT INTO players_elo (player_id, season, elo)
@@ -179,27 +234,27 @@ class EloUpdater:
                         ON CONFLICT (player_id, season)
                         DO UPDATE SET elo = EXCLUDED.elo;
                         """,
-                        player_elo_updates
+                        player_elo_updates,
                     )
                     conn.commit()
         except Exception as e:
             logging.error(f"Error flushing player ELO updates: {e}", exc_info=True)
 
-
-# Main execution
-if __name__ == "__main__":
+def update_elo():
     log_file = "elo_update.log"
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
             RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=5),
-            logging.StreamHandler()  # Remove this if you don't want logs in the console
-        ]
+            logging.StreamHandler(),  # Remove this if you don't want logs in the console
+        ],
     )
 
     try:
-        process_game_num = int(input("Enter number of games you want to process (recommended 100+): "))
+        process_game_num = int(
+            input("Enter number of games you want to process (recommended 100+): ")
+        )
         if process_game_num <= 0:
             raise ValueError("Number of games must be greater than 0.")
     except ValueError as e:
@@ -208,6 +263,14 @@ if __name__ == "__main__":
 
     with DatabaseConnection(DATABASE_CONFIG) as conn:
         with conn.cursor() as cur:
+
             elo_updater = EloUpdater(cur, max_games_to_process=process_game_num)
             games_to_process = elo_updater.fetch_games_to_process()
-            elo_updater.update_elo_with_multiprocessing(DATABASE_CONFIG, games_to_process)
+            elo_updater.update_elo_with_multiprocessing(
+                DATABASE_CONFIG, games_to_process
+            )
+
+
+# Main execution
+if __name__ == "__main__":
+    update_elo()

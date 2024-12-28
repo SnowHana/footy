@@ -1,9 +1,7 @@
 import logging
 
-from src.player_elo.base_analysis import BaseAnalysis
-from src.player_elo.club_analysis import ClubAnalysis
-from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
-from src.player_elo.game_analysis import GameAnalysis
+from footy.player_elo.base_analysis import BaseAnalysis
+from footy.player_elo.game_analysis import GameAnalysis
 
 
 class PlayerAnalysis(BaseAnalysis):
@@ -35,7 +33,9 @@ class PlayerAnalysis(BaseAnalysis):
         try:
             if self.entity_id in self.game_analysis.elos:
                 return self.game_analysis.elos[self.entity_id]
-            raise KeyError(f"Error: Could not find Player {self.entity_id} in Game Analysis ELO record.")
+            raise KeyError(
+                f"Error: Could not find Player {self.entity_id} in Game Analysis ELO record."
+            )
         except KeyError as e:
             logging.error(e)
             raise
@@ -45,10 +45,14 @@ class PlayerAnalysis(BaseAnalysis):
         return 1 / (1 + pow(10, (opponent_elo - self.elo) / 400))
 
     def _get_goal_difference(self) -> int:
-        return self.game_analysis.match_impact_players[(self._get_club_id(), self.entity_id)]
+        return self.game_analysis.match_impact_players[
+            (self._get_club_id(), self.entity_id)
+        ]
 
     def _get_minutes_played(self) -> int:
-        start_min, end_min = self.game_analysis.players_play_times[(self._get_club_id(), self.entity_id)]
+        start_min, end_min = self.game_analysis.players_play_times[
+            (self._get_club_id(), self.entity_id)
+        ]
         return end_min - start_min
 
     def _get_club_id(self) -> int:
@@ -65,7 +69,9 @@ class PlayerAnalysis(BaseAnalysis):
             for club_id, club_players in self.game_analysis.players.items():
                 if self.entity_id in club_players:
                     return club_id
-            raise KeyError(f"Error: Could not find Player {self.entity_id} in game {self.game_analysis.game_id}")
+            raise KeyError(
+                f"Error: Could not find Player {self.entity_id} in game {self.game_analysis.game_id}"
+            )
         except KeyError as e:
             logging.error(e)
             raise
@@ -86,9 +92,16 @@ class PlayerAnalysis(BaseAnalysis):
         @return:
         """
 
-        return self.elo + self.k_value * ((self.q_value * self.calculate_change())
-                                          + ((1 - self.q_value) * team_elo_change * (
-                        self.minutes_played / self.MINUTES_MAX)))
+        return self.elo + self.k_value * (
+            (self.q_value * self.calculate_change())
+            + (
+                (1 - self.q_value)
+                * team_elo_change
+                * (self.minutes_played / self.MINUTES_MAX)
+            )
+        )
+
+
 #
 # with DatabaseConnection(DATABASE_CONFIG) as conn:
 #     with conn.cursor() as cur:

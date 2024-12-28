@@ -1,8 +1,10 @@
 import json
 from datetime import datetime
 from typing import Dict, List, Tuple
+
 from psycopg import sql
-from src.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
+
+from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
 
 # Typing
 ClubGoals = Dict[int, List[int]]
@@ -62,11 +64,14 @@ class GameAnalysis:
         @return: None
         @raise ValueError: If no valid game is found for the given game_id
         """
-        self.cur.execute("""
+        self.cur.execute(
+            """
             SELECT g.home_club_id, g.away_club_id, g.date
             FROM valid_games g
             WHERE g.game_id = %s
-        """, (self.game_id,))
+        """,
+            (self.game_id,),
+        )
         result = self.cur.fetchone()
         if not result:
             raise ValueError(f"No clubs found for game_id={self.game_id}")
@@ -90,38 +95,58 @@ class GameAnalysis:
         self._players_play_times = {}
 
         # Fetch starting players
-        self.cur.execute("""
+        self.cur.execute(
+            """
             SELECT player_club_id AS club_id, player_id, minutes_played
             FROM appearances
             WHERE game_id = %s
-        """, (self.game_id,))
+        """,
+            (self.game_id,),
+        )
         players_playtimes_data = self.cur.fetchall()
 
         # Fetch substituted players
-        self.cur.execute("""
+        self.cur.execute(
+            """
             SELECT club_id, player_id, player_in_id, minute
             FROM game_events
             WHERE type = 'Substitutions' AND game_id = %s
-        """, (self.game_id,))
+        """,
+            (self.game_id,),
+        )
         substitutions_data = self.cur.fetchall()
 
         # Process starting players
         # self._players_play_times = {}
         for club_id, player_id, minutes_played in players_playtimes_data:
-            self._players.setdefault(club_id, []).append(player_id)
-            end_time = minutes_played if minutes_played > 0 else self.FULL_GAME_MINUTES
-            self._players_play_times[(club_id, player_id)] = (0, end_time)
+            if player_id is not None:
+                self._players.setdefault(club_id, []).append(player_id)
+                end_time = (
+                    minutes_played if minutes_played > 0 else self.FULL_GAME_MINUTES
+                )
+                self._players_play_times[(club_id, player_id)] = (0, end_time)
 
         # Process substituted players
         for club_id, player_id, player_in_id, minute in substitutions_data:
-            if (club_id, player_id) in self._players_play_times:
+            if (
+                player_id is not None
+                and (club_id, player_id) in self._players_play_times
+            ):
                 self._players_play_times[(club_id, player_id)] = (
-                self._players_play_times[(club_id, player_id)][0], minute)
-            self._players_play_times[(club_id, player_in_id)] = (minute, self.FULL_GAME_MINUTES)
-            self._players.setdefault(club_id, []).append(player_in_id)
+                    self._players_play_times[(club_id, player_id)][0],
+                    minute,
+                )
+            if player_in_id is not None:
+                self._players_play_times[(club_id, player_in_id)] = (
+                    minute,
+                    self.FULL_GAME_MINUTES,
+                )
+                self._players.setdefault(club_id, []).append(player_in_id)
 
         # Add players_list field
-        self._players_list = [player for club_players in self._players.values() for player in club_players]
+        self._players_list = [
+            player for club_players in self._players.values() for player in club_players
+        ]
 
     def _fetch_goals(self):
         """
@@ -132,11 +157,14 @@ class GameAnalysis:
         # Init.
         self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
 
-        self.cur.execute("""
+        self.cur.execute(
+            """
             SELECT club_id, minute
             FROM game_events
             WHERE type = 'Goals' AND game_id = %s
-        """, (self.game_id,))
+        """,
+            (self.game_id,),
+        )
         goals_data = self.cur.fetchall()
 
         for club_id, minute in goals_data:
@@ -155,10 +183,12 @@ class GameAnalysis:
             return
 
         # Fetch ELOs in bulk
-        query = sql.SQL("""
+        query = sql.SQL(
+            """
             SELECT player_id, elo FROM players_elo
             WHERE player_id IN ({ids}) AND season = %s
-        """).format(ids=sql.SQL(', ').join(sql.Placeholder() * len(self.players_list)))
+        """
+        ).format(ids=sql.SQL(", ").join(sql.Placeholder() * len(self.players_list)))
         self.cur.execute(query, (*self.players_list, self.season))
         elos_data = self.cur.fetchall()
         elos_dict = dict(elos_data)
@@ -170,11 +200,25 @@ class GameAnalysis:
             if elo is not None:
                 self._elos[player_id] = elo
             else:
-                club_id = next((cid for cid, players in self.players.items() if player_id in players), None)
+                club_id = next(
+                    (
+                        cid
+                        for cid, players in self.players.items()
+                        if player_id in players
+                    ),
+                    None,
+                )
                 if club_id:
-                    teammate_elos = [self._elos[pid] for pid in self.players[club_id] if pid in self._elos]
-                    self._elos[player_id] = sum(teammate_elos) / len(
-                        teammate_elos) if teammate_elos else self.DEFAULT_ELO
+                    teammate_elos = [
+                        self._elos[pid]
+                        for pid in self.players[club_id]
+                        if pid in self._elos
+                    ]
+                    self._elos[player_id] = (
+                        sum(teammate_elos) / len(teammate_elos)
+                        if teammate_elos
+                        else self.DEFAULT_ELO
+                    )
                 else:
                     self._elos[player_id] = self.DEFAULT_ELO
 
@@ -189,9 +233,17 @@ class GameAnalysis:
         player_goal_impacts = {}
 
         for (club_id, player_id), (start_time, end_time) in play_times.items():
-            goals_scored = sum(1 for minute in goal_minutes.get(club_id, []) if start_time <= minute <= end_time)
-            goals_conceded = sum(1 for opp_club_id, opp_minutes in goal_minutes.items()
-                                 if opp_club_id != club_id and any(start_time <= minute <= end_time for minute in opp_minutes))
+            goals_scored = sum(
+                1
+                for minute in goal_minutes.get(club_id, [])
+                if start_time <= minute <= end_time
+            )
+            goals_conceded = sum(
+                1
+                for opp_club_id, opp_minutes in goal_minutes.items()
+                if opp_club_id != club_id
+                and any(start_time <= minute <= end_time for minute in opp_minutes)
+            )
             player_goal_impacts[(club_id, player_id)] = goals_scored - goals_conceded
         return player_goal_impacts
 
@@ -215,8 +267,10 @@ class GameAnalysis:
             for player_id in players:
                 # Check key exists in players play times
                 if (club_id, player_id) not in self.players_play_times:
-                    raise ValueError(f"Warning: No player found from player play time record Club: {club_id}"
-                                     f", Player: {player_id}")
+                    raise ValueError(
+                        f"Warning: No player found from player play time record Club: {club_id}"
+                        f", Player: {player_id}"
+                    )
 
                 start, end = self.players_play_times.get((club_id, player_id), (0, 0))
                 minutes_played = abs(end - start)
@@ -224,7 +278,9 @@ class GameAnalysis:
                     minutes_played = 1
                 # Check player exist in ELO
                 if player_id not in self.elos:
-                    raise ValueError(f"Warning: No player found from ELO with player ID {player_id}.")
+                    raise ValueError(
+                        f"Warning: No player found from ELO with player ID {player_id}."
+                    )
                 # player_elo = self.elos.get(player_id, 0.0)
                 player_elo = self.elos[player_id]
 
@@ -315,6 +371,7 @@ class GameAnalysis:
         """
 
         return self._players_list
+
     @property
     def match_impact_players(self) -> MatchImpacts:
         """
@@ -325,8 +382,6 @@ class GameAnalysis:
         if self._match_impact_players is None:
             self._match_impact_players = self._fetch_match_impact_players()
         return self._match_impact_players
-
-
 
     def summary(self) -> Dict[str, any]:
         """
@@ -360,7 +415,7 @@ class GameAnalysis:
         @param filename: The name of the JSON file to save the summary to.
         """
         summary = self.summary()
-        with open(filename, 'w') as file:
+        with open(filename, "w") as file:
             json.dump(summary, file, indent=4)
         print(f"Summary saved to {filename}")
 
