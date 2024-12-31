@@ -6,7 +6,11 @@ from multiprocessing import Pool
 from pathlib import Path
 
 from footy.player_elo.club_analysis import ClubAnalysis
-from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG, DATA_DIR
+from footy.player_elo.database_connection import (
+    DatabaseConnection,
+    DATABASE_CONFIG,
+    DATA_DIR,
+)
 from footy.player_elo.game_analysis import GameAnalysis
 from footy.player_elo.player_analysis import PlayerAnalysis
 
@@ -41,6 +45,7 @@ class EloUpdater:
         """
         )
         result = self.cur.fetchone()
+
         return result if result else (None, None)
 
     def _update_progress(self, last_game_date: str, last_game_id: int) -> None:
@@ -68,14 +73,16 @@ class EloUpdater:
         """
         last_processed_date, last_processed_game_id = self._get_last_processed_game()
 
-        self.cur.execute(
-            f"""
-                            SELECT COUNT(*) FROM valid_games 
-                            WHERE game_id > {last_processed_game_id};"""
-        )
-        logging.info(f"Remaining games to analyse: {self.cur.fetchone()[0]}")
         if last_processed_date:
             # Continue from the last processed game
+            self.cur.execute(
+                """
+                                SELECT COUNT(*) FROM valid_games
+                                WHERE (date::DATE >  %s::DATE OR (date::DATE = %s::DATE AND game_id > %s));""",
+                (last_processed_date, last_processed_date, last_processed_game_id),
+            )
+
+            logging.info(f"Remaining games to analyse: {self.cur.fetchone()[0]}")
             self.cur.execute(
                 """
                     SELECT game_id, date 
@@ -92,6 +99,13 @@ class EloUpdater:
                 ),
             )
         else:
+            self.cur.execute(
+                """
+                             SELECT COUNT(*) FROM valid_games;
+                             """
+            )
+            logging.info(f"Remaining games to analyse: {self.cur.fetchone()[0]}")
+
             # Start from scratch
             self.cur.execute(
                 """
@@ -239,6 +253,7 @@ class EloUpdater:
                     conn.commit()
         except Exception as e:
             logging.error(f"Error flushing player ELO updates: {e}", exc_info=True)
+
 
 def update_elo():
     log_file = "elo_update.log"
