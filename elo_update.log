@@ -1,0 +1,18 @@
+2024-12-31 18:56:53,387 - INFO - Remaining games to analyse: 63246
+2024-12-31 18:56:53,422 - INFO - Starting ELO update for 10 games.
+2024-12-31 18:56:53,422 - INFO - START: (2231978, datetime.date(2012, 7, 3)) - END: (2234404, datetime.date(2012, 7, 9))
+2024-12-31 18:56:53,422 - INFO - ELO Updater start: (2231978, datetime.date(2012, 7, 3)) games waiting for an analyse
+2024-12-31 18:56:56,642 - INFO - Batch completed. Processed 10 games.
+2024-12-31 18:56:56,643 - INFO - Flushing 105 player ELO updates to the database.
+2024-12-31 18:58:23,370 - INFO - Remaining games to analyse: 63236
+2024-12-31 18:58:23,391 - INFO - Starting ELO update for 10 games.
+2024-12-31 18:58:23,392 - INFO - START: (2231980, datetime.date(2012, 7, 10)) - END: (2235799, datetime.date(2012, 7, 12))
+2024-12-31 18:58:23,392 - INFO - ELO Updater start: (2231980, datetime.date(2012, 7, 10)) games waiting for an analyse
+2024-12-31 18:58:26,982 - INFO - Batch completed. Processed 10 games.
+2024-12-31 18:58:26,982 - INFO - Flushing 82 player ELO updates to the database.
+2024-12-31 18:58:29,712 - INFO - Remaining games to analyse: 63226
+2024-12-31 18:58:29,732 - INFO - Starting ELO update for 10 games.
+2024-12-31 18:58:29,732 - INFO - START: (2236654, datetime.date(2012, 7, 12)) - END: (2222957, datetime.date(2012, 7, 15))
+2024-12-31 18:58:29,733 - INFO - ELO Updater start: (2236654, datetime.date(2012, 7, 12)) games waiting for an analyse
+2024-12-31 18:58:32,693 - INFO - Batch completed. Processed 10 games.
+2024-12-31 18:58:32,694 - INFO - Flushing 307 player ELO updates to the database.
