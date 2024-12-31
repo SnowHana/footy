@@ -1,0 +1,6 @@
+2024-12-31 22:11:00,529 - INFO - Remaining games to analyse: 62973
+2024-12-31 22:11:00,770 - INFO - Starting ELO update for 10 games.
+2024-12-31 22:11:00,770 - INFO - START: (2222959, datetime.date(2012, 7, 15)) - END: (2231990, datetime.date(2012, 7, 17))
+2024-12-31 22:11:00,770 - INFO - ELO Updater start: (2222959, datetime.date(2012, 7, 15)) games waiting for an analyse
+2024-12-31 22:11:08,300 - INFO - Batch completed. Processed 10 games.
+2024-12-31 22:11:08,301 - INFO - Flushing 230 player ELO updates to the database.
