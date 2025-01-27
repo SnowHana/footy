@@ -11,10 +11,6 @@ class ClubAnalysis(BaseAnalysis):
         return self.game_analysis.club_ratings.get(self.entity_id, 0)
 
     def _calculate_expectation(self) -> float:
-        # opponent_id = (
-        #     self.game_analysis.home_club_id if self.entity_id == self.game_analysis.away_club_id
-        #     else self.game_analysis.away_club_id)
-
         opponent_elo = self.game_analysis.club_ratings[self.opponent_id]
         return 1 / (1 + pow(10, (opponent_elo - self.elo) / 400))
 

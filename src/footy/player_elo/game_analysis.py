@@ -23,7 +23,7 @@ class GameAnalysis:
 
     def __init__(self, cur, game_id: int):
         """
-        Initialize the GameAnalysis instance for a specific game.
+        Initialize the GameAnalysis instance for a specific game
 
         @param cur: Database cursor for executing SQL queries.
         @param game_id: ID of the game being analyzed.
@@ -45,9 +45,7 @@ class GameAnalysis:
     def _fetch_bulk_game_data(self):
         """
         Fetch all game-related data in bulk to minimize the number of queries.
-        The function calls modular helper methods to fetch specific game data such as
-        game details, players and playtimes, goals, and player ELO ratings.
-
+        (game_details, players_and_playtimes, goals, player_elos)
         @return: None
         """
         self._fetch_game_details()
@@ -57,11 +55,11 @@ class GameAnalysis:
 
     def _fetch_game_details(self):
         """
-        Fetch game metadata such as home/away club IDs and game date.
-        The method also initializes players and goals dictionaries for further processing.
+        Fetch game data like: home/away club IDs and game date.
+        Also initializes players and goals dictionaries.
 
-        @raise ValueError: If no valid game is found for the given game_id.
         @return: None
+        @raise ValueError: If no valid game is found for the given game_id.
         @raise ValueError: If no valid game is found for the given game_id
         """
         self.cur.execute(
@@ -73,6 +71,8 @@ class GameAnalysis:
             (self.game_id,),
         )
         result = self.cur.fetchone()
+
+        # Error: No club found for game id.
         if not result:
             raise ValueError(f"No clubs found for game_id={self.game_id}")
         self.home_club_id, self.away_club_id, game_date = result
@@ -80,12 +80,10 @@ class GameAnalysis:
         # Some formatting and initialising.
         self._date = datetime.strptime(str(game_date), "%Y-%m-%d")
         self._season = self._date.year
-        # self._players = {self.home_club_id: [], self.away_club_id: []}
-        # self._goals_per_club = {self.home_club_id: [], self.away_club_id: []}
 
     def _fetch_players_and_playtimes(self):
         """
-        Fetch starting players and their playtimes along with substitutions during the game.
+        Fetch starting players, substitutios,
         The method populates `_players` and `_players_play_times` attributes.
 
         @return: None

@@ -6,11 +6,7 @@ from multiprocessing import Pool
 from pathlib import Path
 
 from footy.player_elo.club_analysis import ClubAnalysis
-from footy.player_elo.database_connection import (
-    DatabaseConnection,
-    DATABASE_CONFIG,
-    DATA_DIR,
-)
+from footy.player_elo.database_connection import DatabaseConnection, DATABASE_CONFIG
 from footy.player_elo.game_analysis import GameAnalysis
 from footy.player_elo.player_analysis import PlayerAnalysis
 
@@ -34,6 +30,7 @@ class EloUpdater:
     def _get_last_processed_game(self) -> tuple:
         """
         Fetch the last processed game date and game ID from the progress tracker.
+        Return (None, None) if there is no last processed game (ie. Initialising)
         @return: (last_processed_date: Date, last_processed_game_id: int)
         @rtype: tuple (Date, Int)
         """
@@ -69,20 +66,21 @@ class EloUpdater:
     def fetch_games_to_process(self):
         """
         Fetch the list of games to process.
-        @return:
+        @return: List of games to process (game_id, date) of valid games
         """
         last_processed_date, last_processed_game_id = self._get_last_processed_game()
 
         if last_processed_date:
-            # Continue from the last processed game
+            # Count and log remaining games to process
             self.cur.execute(
                 """
                                 SELECT COUNT(*) FROM valid_games
                                 WHERE (date::DATE >  %s::DATE OR (date::DATE = %s::DATE AND game_id > %s));""",
                 (last_processed_date, last_processed_date, last_processed_game_id),
             )
-
             logging.info(f"Remaining games to analyse: {self.cur.fetchone()[0]}")
+
+            # Bulk-fetch batch sized games data
             self.cur.execute(
                 """
                     SELECT game_id, date 
@@ -99,11 +97,7 @@ class EloUpdater:
                 ),
             )
         else:
-            self.cur.execute(
-                """
-                             SELECT COUNT(*) FROM valid_games;
-                             """
-            )
+            self.cur.execute("""SELECT COUNT(*) FROM valid_games;""")
             logging.info(f"Remaining games to analyse: {self.cur.fetchone()[0]}")
 
             # Start from scratch
@@ -122,10 +116,10 @@ class EloUpdater:
     @staticmethod
     def process_game(game, db_config):
         """
-        Static method to process a single game and return player ELO updates.
+        Static method to process a SINGLE game and return player ELO updates.
 
-        @param game: Tuple containing game_id and game_date
-        @param db_config: Database configuration dictionary
+        @param game: (game_id, game_date)
+        @param db_config: Database Config
         @return: Tuple (game_id, game_date, player_elo_updates) or None if there's an error
         """
         game_id, game_date = game
@@ -151,10 +145,9 @@ class EloUpdater:
                     new_away_club_elo = away_club_analysis.new_elo()
 
                     # Update players' ELO
-                    # players = [player for club_players_list in game_analysis.players.values() for player in
-                    #            club_players_list]
                     for player_id in game_analysis.players_list:
-                        # TODO: We have a case where player_id is null?
+                        # Case where player_id is null
+                        # Log and skip.
                         if player_id is None:
                             logging.error(
                                 f"Game {game_id} contains a player with NULL player id."
@@ -182,28 +175,29 @@ class EloUpdater:
 
         @param db_config:
         @param games_to_process:
-        @return:
+        @return: None
         """
         logging.info(f"Starting ELO update for {len(games_to_process)} games.")
         logging.info(f"START: {games_to_process[0]} - END: {games_to_process[-1]}")
 
-        logging.info(
-            f"ELO Updater start: {games_to_process[0]} games waiting for an analyse"
-        )
-        all_player_elo_updates = []  # Accumulate all updates
+        # List to store all updates
+        all_player_elo_updates = []
 
-        # Batching to improve performance
+        # Split len(games_to_process) to BATCH_SIZEd lists
         batches = [
             games_to_process[i : i + self.BATCH_SIZE]
             for i in range(0, len(games_to_process), self.BATCH_SIZE)
         ]
 
+        # Deal with each batch
         for batch in batches:
             if self.games_processed >= self.MAX_GAMES_TO_PROCESS:
+                # Exit after processing MAX GAMES
                 logging.info(f"Processed {self.games_processed} games. Exiting...")
-                return  # Exit after processing the maximum allowed games
+                return
 
-            with Pool(processes=4) as pool:  # Adjust the number of processes
+            with Pool(processes=4) as pool:
+                # Adjust the number of processes
                 results = pool.map(
                     partial(self.process_game, db_config=db_config), batch
                 )
@@ -219,7 +213,7 @@ class EloUpdater:
                     # Flush to DB if the batch limit is reached
                     if len(all_player_elo_updates) >= self.PLAYER_BATCH_LIMIT:
                         self._flush_player_elo_updates(all_player_elo_updates)
-                        all_player_elo_updates = []  # Clear the list after flushing
+                        all_player_elo_updates = []
 
             logging.info(f"Batch completed. Processed {len(batch)} games.")
 
@@ -227,20 +221,20 @@ class EloUpdater:
         if all_player_elo_updates:
             self._flush_player_elo_updates(all_player_elo_updates)
 
-    def _flush_player_elo_updates(self, player_elo_updates):
-        """Flush player ELO updates to the database."""
+    def _flush_player_elo_updates(self, all_player_elo_updates):
+        """Flush Player ELO updates
+
+        Args:
+            all_player_elo_updates (List): List of updates of players
+        """
         logging.info(
-            f"Flushing {len(player_elo_updates)} player ELO updates to the database."
+            f"Flushing {len(all_player_elo_updates)} player ELO updates to the database."
         )
         try:
             with DatabaseConnection(DATABASE_CONFIG) as conn:
                 with conn.cursor() as cur:
-                    # Error checking
-                    # player_id, _ = player_elo_updates
-                    # if player_id is None:
-                    #     logging.error(f"Player ID is Null for {player_elo_updates}")
-                    #     exit()
-
+                    # Insert/Update players_elo table
+                    # Conflict: Update
                     cur.executemany(
                         """
                         INSERT INTO players_elo (player_id, season, elo)
@@ -248,7 +242,7 @@ class EloUpdater:
                         ON CONFLICT (player_id, season)
                         DO UPDATE SET elo = EXCLUDED.elo;
                         """,
-                        player_elo_updates,
+                        all_player_elo_updates,
                     )
                     conn.commit()
         except Exception as e:
@@ -256,6 +250,11 @@ class EloUpdater:
 
 
 def update_elo():
+    """Main Update Function.
+    Logs as well.
+    Raises:
+        ValueError: _description_
+    """
     log_file = "elo_update.log"
     logging.basicConfig(
         level=logging.INFO,

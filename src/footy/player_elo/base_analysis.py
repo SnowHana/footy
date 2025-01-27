@@ -135,16 +135,6 @@ class BaseAnalysis:
         Calculate Game Score based on match impact (goal difference).
         @todo : Think about using goal_difference or sth else
         """
-
-        # if self.is_club:
-        #     home_goals = len(self.game_analysis.goals_per_club.get(self.game_analysis.home_club_id, []))
-        #     away_goals = len(self.game_analysis.goals_per_club.get(self.game_analysis.away_club_id, []))
-        #     match_impact = home_goals - away_goals
-        #
-        # else:
-        #     # Player
-        #     match_impact = self.game_analysis.match_impact_players()
-
         if self.goal_difference > 0:
             return 1.0
         elif self.goal_difference == 0:
