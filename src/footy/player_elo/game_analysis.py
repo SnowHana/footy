@@ -84,7 +84,7 @@ class GameAnalysis:
     def _fetch_players_and_playtimes(self):
         """
         Fetch starting players, substitutios,
-        The method populates `_players` and `_players_play_times` attributes.
+        `_players` and `_players_play_times` attributes set.
 
         @return: None
         """
@@ -115,7 +115,6 @@ class GameAnalysis:
         substitutions_data = self.cur.fetchall()
 
         # Process starting players
-        # self._players_play_times = {}
         for club_id, player_id, minutes_played in players_playtimes_data:
             if player_id is not None:
                 self._players.setdefault(club_id, []).append(player_id)
@@ -148,7 +147,8 @@ class GameAnalysis:
 
     def _fetch_goals(self):
         """
-        Fetch goal events during the game and populate `_goals_per_club`.
+        Fetch goal events during the game
+        `_goals_per_club` set
 
         @return: None
         """
@@ -175,7 +175,6 @@ class GameAnalysis:
 
         @return: None
         """
-        # self._players_list = [player for club_players in self._players.values() for player in club_players]
         if not self.players_list:
             self._elos = {}
             return
@@ -224,7 +223,8 @@ class GameAnalysis:
         """
         Calculate the match impact of all players who participated in this game.
 
-        @return: A dictionary containing the impact of each player, measured by goals scored minus goals conceded.
+        @return: MatchImpacts = Dict[Tuple[int, int], int] = {(club_id, player_id) : player_goal_impacts}
+        A dictionary containing the impact of each player, measured by goals scored minus goals conceded.
         """
         goal_minutes = self._goals_per_club
         play_times = self._players_play_times

@@ -22,14 +22,7 @@ class PlayerAnalysis(BaseAnalysis):
         return self._club_id
 
     def _fetch_elo(self) -> float:
-        # self.game_analysis.cur.execute("""
-        #                 SELECT e.elo
-        #                 FROM players_elo e
-        #                 JOIN appearances a ON e.player_id = a.player_id
-        #                 WHERE a.game_id = %s AND e.player_id = %s AND EXTRACT(YEAR FROM a.date::date) = e.season
-        #             """, (self.game_analysis.game_id, self.entity_id))
-        # TODO: Make this use game_analysis elo attr instead of querying
-        # Because there are tooooooo many empty info in appearances table
+
         try:
             if self.entity_id in self.game_analysis.elos:
                 return self.game_analysis.elos[self.entity_id]
@@ -59,12 +52,7 @@ class PlayerAnalysis(BaseAnalysis):
         """
         Retrieve the club ID for the player.
         """
-        # self.game_analysis.cur.execute("""
-        #         SELECT player_club_id
-        #         FROM appearances
-        #         WHERE game_id = %s AND player_id = %s
-        #     """, (self.game_analysis.game_id, self.entity_id))
-        # return self.game_analysis.cur.fetchone()[0]
+
         try:
             for club_id, club_players in self.game_analysis.players.items():
                 if self.entity_id in club_players:
@@ -100,49 +88,3 @@ class PlayerAnalysis(BaseAnalysis):
                 * (self.minutes_played / self.MINUTES_MAX)
             )
         )
-
-
-#
-# with DatabaseConnection(DATABASE_CONFIG) as conn:
-#     with conn.cursor() as cur:
-#         # Initialize game analysis with game ID
-#         game_analysis = GameAnalysis(cur, game_id=3079452)
-#
-#         # Initialize BaseAnalysis for a club entity
-#         home_club_analysis = ClubAnalysis(game_analysis, game_analysis.home_club_id)
-#         away_club_analysis = ClubAnalysis(game_analysis, game_analysis.away_club_id)
-#         # Calculate ELO and expectation
-#         print("Club ELO:", home_club_analysis.elo)
-#         print("Club ELO:", away_club_analysis.elo)
-#         print("Club Expectation:", home_club_analysis.expectation)
-#         print("Club Expectation:", away_club_analysis.expectation)
-#         print("Club MP", home_club_analysis.minutes_played)
-#         print("Club GD", home_club_analysis.goal_difference)
-#         print("Club GD", away_club_analysis.goal_difference)
-#
-#         # Test Player analysis\
-#         players = [player for club, player in game_analysis.players_play_times.keys()]
-#         player_analysis = PlayerAnalysis(game_analysis, players[5])
-#         club_analysis = ClubAnalysis(game_analysis, player_analysis.club_id)
-#         # Testing player analysis
-#         print("Player: ", player_analysis.entity_id)
-#         print("Player Expectation:", player_analysis.expectation)
-#         print("Player MP", player_analysis.minutes_played)
-#         print("Player GD", player_analysis.goal_difference)
-#         print("Player ELO:", player_analysis.elo)
-#         print("Player ELO Change", player_analysis.new_elo(club_analysis.calculate_change()))
-
-# Update the club's ELO based on actual game score (e.g., actual_score=1.0 if they won)
-# updated_elo = club_analysis.update_elo(actual_score=1.0, weight=0.5)
-# print("Updated Club ELO:", updated_elo)
-
-# Initialize BaseAnalysis for a player entity
-# player_analysis = BaseAnalysis(game_analysis=game_analysis, entity_id=20506, is_club=False)
-#
-# # Calculate ELO and expectation for the player
-# print("Player ELO:", player_analysis.elo)
-# print("Player Expectation:", player_analysis.expectation)
-#
-# # Update the player's ELO based on actual performance score
-# updated_player_elo = player_analysis.update_elo(actual_score=0.5, weight=0.3)
-# print("Updated Player ELO:", updated_player_elo)

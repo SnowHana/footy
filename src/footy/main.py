@@ -17,9 +17,7 @@ def reset_db():
 
     try:
         print("\nResetting database...")
-        # subprocess.run([sys.executable, str(script_init_path)], check=True)
         # Reset db
-        # reset_init_players_elo_db()
         init_sql_db()
         validate_games()
         # subprocess.run([sys.executable, str(script_reset_path)], check=True)
@@ -35,7 +33,6 @@ def reset_players_elo():
     # Build the absolute path to init_player_elo.py
     try:
         print("\nResetting Players ELO table...")
-        # subprocess.run([sys.executable, str(script_path)], check=True)
         reset_init_players_elo_db()
         print("Players ELO Table reset successfully!\n")
     except subprocess.CalledProcessError as e:
